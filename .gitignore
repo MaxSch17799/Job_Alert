@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+logs/*.log
+secrets.yaml
+job_alert.db
+playwright-report/
+

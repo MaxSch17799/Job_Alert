@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="panel" method="post" action="{{ url_for('save_site') }}">
+  <div class="panel-header">
+    <div>
+      <h2>{{ "Edit Site" if site else "Add Site" }}</h2>
+      <p>Use the default profile broadly, then add site-only refinements where needed.</p>
+    </div>
+  </div>
+  <div class="grid two-up">
+    <label>Site Id<input name="id" value="{{ site.id if site else '' }}"></label>
+    <label>Label<input name="label" value="{{ site.label if site else '' }}"></label>
+    <label class="wide">Source URL<input name="source_url" value="{{ site.source_url if site else '' }}"></label>
+    <label>Adapter
+      <select name="type">
+        {% set current_type = site.type if site else 'auto' %}
+        {% for adapter in ['auto', 'workday', 'onlyfy', 'html_links', 'browser_links', 'lufthansa', 'successfactors'] %}
+          <option value="{{ adapter }}" {% if current_type == adapter %}selected{% endif %}>{{ adapter }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" name="enabled" {% if not site or site.enabled %}checked{% endif %}> Enabled</label>
+    <label class="check"><input type="checkbox" name="use_profile_defaults" {% if not site or site.use_profile_defaults %}checked{% endif %}> Inherit default profile</label>
+    <label class="check"><input type="checkbox" name="immediate_new_jobs" {% if not site or site.alerts.immediate_new_jobs %}checked{% endif %}> Immediate alerts</label>
+    <label class="check"><input type="checkbox" name="weekly_summary" {% if site and site.alerts.weekly_summary %}checked{% endif %}> Weekly summary</label>
+    <label class="check"><input type="checkbox" name="monthly_summary" {% if site and site.alerts.monthly_summary %}checked{% endif %}> Monthly summary</label>
+    <label class="check"><input type="checkbox" name="alert_on_failure" {% if not site or site.alerts.alert_on_failure %}checked{% endif %}> Alert on failure</label>
+    <label class="check"><input type="checkbox" name="advanced_expanded" {% if not site or site.ui.advanced_expanded %}checked{% endif %}> Show advanced by default</label>
+  </div>
+
+  {% if site and inherited %}
+    <section class="subpanel">
+      <h3>Inherited Profile Snapshot</h3>
+      <div class="keyword-grid">
+        <div>
+          <h4>Include</h4>
+          <div class="chip-stack">
+            {% for term in inherited.include_any %}
+              <span class="chip inherited">{{ term }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <h4>Exclude</h4>
+          <div class="chip-stack">
+            {% for term in inherited.exclude_any %}
+              <span class="chip inherited">{{ term }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="subpanel">
+    <h3>Site-Specific Keywords</h3>
+    <div class="grid two-up">
+      <label>Include Terms<textarea name="include_any">{{ list_to_textarea(site.include_any) if site else '' }}</textarea></label>
+      <label>Exclude Terms<textarea name="exclude_any">{{ list_to_textarea(site.exclude_any) if site else '' }}</textarea></label>
+      <label>Location Terms<textarea name="location_any">{{ list_to_textarea(site.filters.location_any) if site else '' }}</textarea></label>
+      <label>Contract Types<textarea name="contract_type_any">{{ list_to_textarea(site.filters.contract_type_any) if site else '' }}</textarea></label>
+      <label class="wide">Languages<textarea name="language_any">{{ list_to_textarea(site.filters.language_any) if site else '' }}</textarea></label>
+    </div>
+    {% if site %}
+      <div class="keyword-grid">
+        <div>
+          <h4>Right-click site-only include terms to promote them</h4>
+          <div class="chip-stack">
+            {% for term in site.include_any %}
+              <span class="chip site-only" data-term="{{ term }}" data-bucket="include_any">{{ term }}</span>
+            {% else %}
+              <span class="small">No site-only include terms.</span>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <h4>Right-click site-only location terms to promote them</h4>
+          <div class="chip-stack">
+            {% for term in site.filters.location_any %}
+              <span class="chip site-only" data-term="{{ term }}" data-bucket="location_any">{{ term }}</span>
+            {% else %}
+              <span class="small">No site-only location terms.</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+
+  <div class="inline-actions">
+    <button class="button" type="submit">Save Site</button>
+    <a class="button ghost" href="{{ url_for('index') }}">Back</a>
+  </div>
+</form>
+{% if site %}
+  <form class="panel" method="post" action="{{ url_for('delete_site', site_id=site.id) }}" onsubmit="return confirm('Delete this site?');">
+    <button class="button danger" type="submit">Delete Site</button>
+  </form>
+{% endif %}
+{% endblock %}

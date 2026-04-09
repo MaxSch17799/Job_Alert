@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or "Job Alert" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Windows Task Scheduler + Local UI</p>
+        <h1>Job Alert Control Room</h1>
+        <p class="subcopy">Edit your profile, inspect site health, and keep the scraper behavior visible instead of buried in code.</p>
+      </div>
+      <nav class="hero-actions">
+        <a class="button ghost" href="{{ url_for('index') }}">Dashboard</a>
+        <a class="button" href="{{ url_for('new_site') }}">Add Site</a>
+      </nav>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <section class="flash-stack">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+  <div id="keyword-menu" class="keyword-menu hidden">
+    <form method="post" action="{{ url_for('promote_keyword') }}">
+      <input type="hidden" name="term" id="keyword-menu-term">
+      <input type="hidden" name="bucket" id="keyword-menu-bucket">
+      <button type="submit">Add To Default Profile</button>
+    </form>
+  </div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
+

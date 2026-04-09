@@ -1,0 +1,40 @@
+global:
+  profile:
+    include_any: []
+    exclude_any: []
+    location_any: []
+    contract_type_any: []
+    language_any: []
+  scheduler:
+    mode: daily
+    interval: 1
+    time: "08:00"
+    weekdays:
+      - MON
+  defaults:
+    broad_match: true
+    alert_on_first_failure: true
+    browser_fallback: true
+    request_timeout_seconds: 30
+    detail_fetch_enabled: false
+
+sites:
+  - id: example_site
+    label: Example Site
+    enabled: true
+    source_url: https://example.com/careers
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true

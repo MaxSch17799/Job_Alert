@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <h2>Run Control</h2>
+      <p>Kick off a scrape immediately or push the current schedule into Windows Task Scheduler.</p>
+    </div>
+    <div class="inline-actions">
+      <form method="post" action="{{ url_for('run_now') }}">
+        <button class="button" type="submit">Run Now</button>
+      </form>
+      <form method="post" action="{{ url_for('apply_scheduler') }}">
+        <button class="button ghost" type="submit">Apply Windows Schedule</button>
+      </form>
+      <form method="post" action="{{ url_for('test_email') }}">
+        <button class="button ghost" type="submit">Send Test Email</button>
+      </form>
+    </div>
+  </div>
+  <p class="mono small">{{ scheduler_command }}</p>
+</section>
+
+<section class="grid two-up">
+  <form class="panel" method="post" action="{{ url_for('save_profile') }}">
+    <div class="panel-header">
+      <div>
+        <h2>Profile And Delivery</h2>
+        <p>The default profile applies to new sites unless a site overrides it.</p>
+      </div>
+    </div>
+    <div class="subpanel">
+      <h3>Gmail Setup In Plain Language</h3>
+      <p>Your app logs into one sender mailbox, hands Gmail the alert, and Gmail sends it to your recipient inboxes. The cleanest setup is a dedicated Gmail sender account with 2-Step Verification and an App Password.</p>
+    </div>
+    <div class="grid two-up">
+      <label>Sender Email<input name="email_sender_email" value="{{ config.email.sender_email }}"></label>
+      <label>Sender Name<input name="email_sender_name" value="{{ config.email.sender_name }}"></label>
+      <label>SMTP Host<input name="email_smtp_host" value="{{ config.email.smtp_host }}"></label>
+      <label>SMTP Port<input name="email_smtp_port" value="{{ config.email.smtp_port }}"></label>
+      <label>SMTP Username<input name="email_smtp_username" value="{{ config.email.smtp_username }}"></label>
+      <label>Recipients<textarea name="email_recipient_emails">{{ list_to_textarea(config.email.recipient_emails) }}</textarea></label>
+      <label class="wide">Gmail App Password<input name="email_smtp_app_password" type="password" value="{{ config.email.smtp_app_password }}"></label>
+      <label>Schedule Mode
+        <select name="scheduler_mode">
+          <option value="daily" {% if config.scheduler.mode == 'daily' %}selected{% endif %}>Every N days</option>
+          <option value="weekly" {% if config.scheduler.mode == 'weekly' %}selected{% endif %}>Every N weeks on weekdays</option>
+        </select>
+      </label>
+      <label>Repeat Interval<input name="scheduler_interval" value="{{ config.scheduler.interval }}"></label>
+      <label>Run Time<input name="scheduler_time" value="{{ config.scheduler.time }}"></label>
+      <label class="wide">Weekdays<textarea name="scheduler_weekdays">{{ list_to_textarea(config.scheduler.weekdays) }}</textarea></label>
+      <label class="check"><input type="checkbox" name="defaults_broad_match" {% if config.defaults.broad_match %}checked{% endif %}> Broad match if include terms do not appear directly</label>
+      <label class="check"><input type="checkbox" name="defaults_alert_on_first_failure" {% if config.defaults.alert_on_first_failure %}checked{% endif %}> Alert on first failure</label>
+      <label class="check"><input type="checkbox" name="defaults_browser_fallback" {% if config.defaults.browser_fallback %}checked{% endif %}> Allow browser fallback for dynamic sites</label>
+      <label class="check"><input type="checkbox" name="defaults_detail_fetch_enabled" {% if config.defaults.detail_fetch_enabled %}checked{% endif %}> Enable detail fetch enrichment later</label>
+      <label>Request Timeout (seconds)<input name="defaults_request_timeout_seconds" value="{{ config.defaults.request_timeout_seconds }}"></label>
+    </div>
+    <div class="grid two-up">
+      <label>Default Include Terms<textarea name="profile_include_any">{{ list_to_textarea(config.profile.include_any) }}</textarea></label>
+      <label>Default Exclude Terms<textarea name="profile_exclude_any">{{ list_to_textarea(config.profile.exclude_any) }}</textarea></label>
+      <label>Default Locations<textarea name="profile_location_any">{{ list_to_textarea(config.profile.location_any) }}</textarea></label>
+      <label>Default Contract Types<textarea name="profile_contract_type_any">{{ list_to_textarea(config.profile.contract_type_any) }}</textarea></label>
+      <label class="wide">Default Languages<textarea name="profile_language_any">{{ list_to_textarea(config.profile.language_any) }}</textarea></label>
+    </div>
+    <button class="button" type="submit">Save Profile Settings</button>
+  </form>
+
+  <form class="panel" method="post" action="{{ url_for('import_profile') }}">
+    <div class="panel-header">
+      <div>
+        <h2>Import Keyword YAML</h2>
+        <p>Paste YAML from another tool or another install. It updates the default profile only.</p>
+      </div>
+    </div>
+    <label class="wide">
+      YAML
+      <textarea name="profile_yaml" class="tall"></textarea>
+    </label>
+    <button class="button ghost" type="submit">Import YAML</button>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <h2>Sites</h2>
+      <p>Overview first, then edit each site in detail.</p>
+    </div>
+  </div>
+  <table class="site-table">
+    <thead>
+      <tr>
+        <th>Site</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Resolved URL</th>
+        <th>Failures</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for site in config.sites %}
+        {% set status = status_map.get(site.id) %}
+        <tr>
+          <td>
+            <strong>{{ site.label }}</strong>
+            <div class="small mono">{{ site.id }}</div>
+          </td>
+          <td>{{ status['last_adapter'] if status and status['last_adapter'] else site.type }}</td>
+          <td>
+            {% if status %}
+              <span class="badge {{ status['last_status'] or 'unknown' }}">{{ status['last_status'] or 'unknown' }}</span>
+              <div class="small">{{ status['last_error'] or 'No recent error' }}</div>
+            {% else %}
+              <span class="badge unknown">never-run</span>
+            {% endif %}
+          </td>
+          <td class="mono small">{{ status['resolved_url'] if status else site.source_url }}</td>
+          <td>{{ status['consecutive_failures'] if status else 0 }}</td>
+          <td class="inline-actions">
+            <a class="button small" href="{{ url_for('edit_site', site_id=site.id) }}">Edit</a>
+            <form method="post" action="{{ url_for('test_site', site_id=site.id) }}">
+              <button class="button ghost small" type="submit">Test</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel diagnostics">
+  <details>
+    <summary>Diagnostics</summary>
+    <div class="diagnostics-list">
+      {% for run in runs %}
+        <article class="diag-item">
+          <div><strong>{{ run['status'] }}</strong> | {{ run['site_id'] or 'global' }}</div>
+          <div class="small">{{ run['message'] }}</div>
+          <div class="small mono">{{ run['started_at'] }}</div>
+        </article>
+      {% else %}
+        <p>No runs recorded yet.</p>
+      {% endfor %}
+    </div>
+  </details>
+</section>
+{% endblock %}

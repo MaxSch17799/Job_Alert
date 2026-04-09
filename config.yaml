@@ -1,0 +1,430 @@
+global:
+  profile:
+    include_any:
+      - systems engineer
+      - system engineer
+      - systems engineering
+      - systems engineering architect
+      - system architect
+      - space systems engineer
+      - spacecraft systems engineer
+      - spacecraft engineer
+      - electrical systems engineer
+      - electrical system engineer
+      - electrical engineer
+      - electrical or electronics engineering
+      - electronics engineer
+      - electronics technical engineer
+      - avionics systems engineer
+      - avionics engineer
+      - spacecraft avionics
+      - satellite avionics
+      - electrical focus
+      - power systems engineer
+      - space power systems
+      - electrical power systems
+      - electrical power subsystem
+      - electrical power distribution
+      - electrical power distribution system
+      - power electronics
+      - power electronics engineer
+      - battery systems
+      - electric propulsion
+      - hybrid-electric propulsion
+      - electrified propulsion
+      - propulsion systems
+      - systems integration
+      - system integration
+      - integration and test
+      - integration engineer
+      - test systems engineer
+      - test engineer
+      - verification and validation
+      - validation and verification
+      - ivv
+      - ivvq
+      - qualification
+      - commissioning
+      - requirements engineering
+      - requirements management
+      - interface management
+      - electrical design installation
+      - electrical design installation engineer
+      - equipment integration
+      - equipment integration engineer
+      - ewis
+      - harness design
+      - avionics and electrical systems
+      - avionics integration
+      - satellite operations
+      - satellite flight operations
+      - spacecraft operations
+      - flight operations
+      - mission operations
+      - mission operations engineer
+      - mission control systems
+      - payload operations
+      - ground segment
+      - ground segment systems engineer
+      - ground station
+      - ground station systems engineer
+      - monitoring and control
+      - flight dynamics
+      - operations preparation
+      - earth observation
+      - copernicus
+      - telemetry and telecommand
+      - tt&c
+      - on-board data handling
+      - data handling subsystem
+      - air traffic management
+      - radar systems
+      - radar systems engineer
+    exclude_any:
+      - software engineer
+      - software developer
+      - embedded software engineer
+      - full stack
+      - frontend
+      - backend
+      - devops
+      - cloud engineer
+      - cybersecurity
+      - cyber security
+      - data scientist
+      - data engineer
+      - machine learning
+      - ai engineer
+      - it support
+      - system administrator
+      - human resources
+      - recruiter
+      - talent acquisition
+      - finance
+      - accounting
+      - controlling
+      - legal
+      - sales
+      - marketing
+      - procurement
+      - buyer
+      - purchasing
+      - supply chain
+      - logistics
+      - mechanical design
+      - structures
+      - structural engineer
+      - stress engineer
+      - aerodynamics
+      - manufacturing engineer
+      - production engineer
+      - quality engineer
+      - quality assurance
+      - working student
+      - apprenticeship
+      - apprentice
+      - phd
+      - postdoc
+      - head of
+      - director
+    location_any:
+      - darmstadt
+      - frankfurt
+      - bensheim
+      - rhein-main
+      - noordwijk
+      - delft
+      - rotterdam
+      - den haag
+      - the hague
+      - amsterdam
+      - leiden
+      - bremen
+      - hamburg
+      - oberpfaffenhofen
+      - ottobrunn
+      - taufkirchen
+      - manching
+      - immenstaad
+      - friedrichshafen
+      - munich
+      - münchen
+      - linköping
+      - linkoping
+      - stockholm
+      - stans
+      - zürich
+      - zurich
+      - geneva
+      - genève
+      - toulouse
+    contract_type_any:
+      - full time
+      - full-time
+      - permanent
+      - fixed term
+      - fixed-term
+      - graduate
+      - graduate trainee
+      - young graduate trainee
+      - trainee
+      - trainee programme
+      - early career
+      - entry level
+      - junior
+    language_any:
+      - english
+      - german
+  scheduler:
+    mode: daily
+    interval: 1
+    time: "08:00"
+    weekdays:
+      - MON
+  defaults:
+    broad_match: true
+    alert_on_first_failure: true
+    browser_fallback: true
+    request_timeout_seconds: 30
+    detail_fetch_enabled: false
+
+sites:
+  - id: eumetsat_onlyfy
+    label: EUMETSAT Jobbase
+    enabled: true
+    source_url: https://eumetsat.onlyfy.jobs/
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: leonardo
+    label: Leonardo Career Site
+    enabled: true
+    source_url: https://leonardocompany.wd3.myworkdayjobs.com/LeonardoCareerSite
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: airbus
+    label: Airbus Careers
+    enabled: true
+    source_url: https://ag.wd3.myworkdayjobs.com/Airbus
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: esa
+    label: ESA Jobs
+    enabled: true
+    source_url: https://jobs.esa.int/
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: eumetsat_page
+    label: EUMETSAT Vacancies Page
+    enabled: true
+    source_url: https://www.eumetsat.int/work-us/vacancies
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: saab
+    label: Saab Careers
+    enabled: true
+    source_url: https://www.saab.com/career
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: beyond_gravity
+    label: Beyond Gravity
+    enabled: true
+    source_url: https://www.beyondgravity.com/en/careers
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: pilatus
+    label: Pilatus Jobs
+    enabled: true
+    source_url: https://www.pilatus-aircraft.com/en/jobs
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: ohb_page
+    label: OHB Careers Page
+    enabled: true
+    source_url: https://www.ohb.de/en/career
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: ohb_csod
+    label: OHB Applicant Portal
+    enabled: true
+    source_url: https://career-ohb.csod.com/ux/ats/careersite/4/home?c=career-ohb&lang=de-DE
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: lufthansa_technik
+    label: Lufthansa Technik
+    enabled: true
+    source_url: https://www.lufthansa-technik.com/en/career
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+
+  - id: cern
+    label: CERN Tech Jobs
+    enabled: true
+    source_url: https://careers.smartrecruiters.com/cern/tech
+    type: auto
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
