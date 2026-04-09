@@ -6,6 +6,7 @@ Local Windows job-alert scraper with:
 - SQLite state and plain text logs
 - Gmail SMTP notifications
 - a test-email button in the UI
+- immediate alerts plus optional weekly or monthly summaries per site
 - Windows Task Scheduler integration
 - direct adapters for Workday, onlyfy, Lufthansa Group, and generic HTML pages
 - explicit failure reporting for login-gated boards such as Pilatus SuccessFactors

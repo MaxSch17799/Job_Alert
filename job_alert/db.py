@@ -52,6 +52,21 @@ CREATE TABLE IF NOT EXISTS alerts_sent (
     site_id TEXT,
     payload_hash TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS matched_jobs (
+    site_id TEXT NOT NULL,
+    job_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL,
+    location TEXT,
+    posted_text TEXT,
+    summary_text TEXT,
+    matched_terms TEXT,
+    first_matched_at TEXT NOT NULL,
+    delivered_weekly_at TEXT,
+    delivered_monthly_at TEXT,
+    PRIMARY KEY (site_id, job_id)
+);
 """
 
 
@@ -160,6 +175,84 @@ class Database:
                 (now, now, site_id, status, message, new_jobs_count, 1 if bootstrap else 0),
             )
 
+    def record_matched_job(self, job: JobPosting) -> None:
+        now = utc_now_iso()
+        with self.connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO matched_jobs(
+                    site_id, job_id, title, url, location, posted_text, summary_text, matched_terms, first_matched_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(site_id, job_id) DO UPDATE SET
+                    title = excluded.title,
+                    url = excluded.url,
+                    location = excluded.location,
+                    posted_text = excluded.posted_text,
+                    summary_text = excluded.summary_text,
+                    matched_terms = excluded.matched_terms
+                """,
+                (
+                    job.site_id,
+                    job.job_id,
+                    job.title,
+                    job.url,
+                    job.location,
+                    job.posted_text,
+                    job.summary_text,
+                    ", ".join(job.matched_terms),
+                    now,
+                ),
+            )
+
+    def pending_summary_jobs(self, site_id: str, period: str) -> list[JobPosting]:
+        if period not in {"weekly", "monthly"}:
+            raise ValueError(f"Unsupported summary period: {period}")
+        delivered_column = "delivered_weekly_at" if period == "weekly" else "delivered_monthly_at"
+        with self.connect() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT site_id, job_id, title, url, location, posted_text, summary_text, matched_terms
+                FROM matched_jobs
+                WHERE site_id = ? AND {delivered_column} IS NULL
+                ORDER BY first_matched_at ASC
+                """,
+                (site_id,),
+            ).fetchall()
+        jobs = []
+        for row in rows:
+            jobs.append(
+                JobPosting(
+                    site_id=row["site_id"],
+                    job_id=row["job_id"],
+                    title=row["title"],
+                    url=row["url"],
+                    location=row["location"] or "",
+                    posted_text=row["posted_text"] or "",
+                    summary_text=row["summary_text"] or "",
+                    matched_terms=[term.strip() for term in (row["matched_terms"] or "").split(",") if term.strip()],
+                )
+            )
+        return jobs
+
+    def mark_summary_delivered(self, site_id: str, job_ids: list[str], period: str) -> None:
+        if not job_ids:
+            return
+        if period not in {"weekly", "monthly"}:
+            raise ValueError(f"Unsupported summary period: {period}")
+        delivered_column = "delivered_weekly_at" if period == "weekly" else "delivered_monthly_at"
+        placeholders = ", ".join("?" for _ in job_ids)
+        now = utc_now_iso()
+        with self.connect() as conn:
+            conn.execute(
+                f"""
+                UPDATE matched_jobs
+                SET {delivered_column} = ?
+                WHERE site_id = ? AND job_id IN ({placeholders})
+                """,
+                (now, site_id, *job_ids),
+            )
+
     def recent_runs(self, limit: int = 20):
         with self.connect() as conn:
             return list(conn.execute("SELECT * FROM runs ORDER BY run_id DESC LIMIT ?", (limit,)).fetchall())
@@ -182,4 +275,3 @@ class Database:
                 (alert_key, utc_now_iso(), category, site_id or None, payload_hash),
             )
         return True
-

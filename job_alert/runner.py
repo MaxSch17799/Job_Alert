@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from .adapters import get_adapter, resolve_site
 from .adapters.base import AdapterContext, create_session
 from .config import load_config
@@ -48,6 +50,26 @@ class JobAlertRunner:
                         bootstrap_jobs.extend(result.matched_jobs)
                     else:
                         digest_jobs.extend(result.matched_jobs)
+                if notifier.is_configured() and site.alerts.weekly_summary:
+                    week_key = datetime.now(timezone.utc).strftime("%G-W%V")
+                    weekly_jobs = self.db.pending_summary_jobs(site.id, "weekly")
+                    if weekly_jobs and self.db.should_send_alert(f"weekly-summary::{site.id}", week_key):
+                        try:
+                            summary.emails_sent.append(notifier.send_periodic_summary(site.label, weekly_jobs, period="weekly"))
+                            self.db.mark_summary_delivered(site.id, [job.job_id for job in weekly_jobs], "weekly")
+                        except Exception as exc:
+                            self.logger.exception("Failed to send weekly summary for %s", site.id)
+                            self.db.log_run(site.id, "weekly-summary-email", str(exc))
+                if notifier.is_configured() and site.alerts.monthly_summary:
+                    month_key = datetime.now(timezone.utc).strftime("%Y-%m")
+                    monthly_jobs = self.db.pending_summary_jobs(site.id, "monthly")
+                    if monthly_jobs and self.db.should_send_alert(f"monthly-summary::{site.id}", month_key):
+                        try:
+                            summary.emails_sent.append(notifier.send_periodic_summary(site.label, monthly_jobs, period="monthly"))
+                            self.db.mark_summary_delivered(site.id, [job.job_id for job in monthly_jobs], "monthly")
+                        except Exception as exc:
+                            self.logger.exception("Failed to send monthly summary for %s", site.id)
+                            self.db.log_run(site.id, "monthly-summary-email", str(exc))
             elif site.alerts.alert_on_failure and notifier.is_configured():
                 status_after = self.db.get_site_status(site.id)
                 failure_count = int(status_after["consecutive_failures"]) if status_after else 1
@@ -114,6 +136,8 @@ class JobAlertRunner:
                         new_matches.append(job)
                     elif matched_jobs and not bootstrap and not already_seen and job in matched_jobs:
                         new_matches.append(job)
+                for job in new_matches:
+                    self.db.record_matched_job(job)
 
             self.db.update_site_status(
                 site.id,

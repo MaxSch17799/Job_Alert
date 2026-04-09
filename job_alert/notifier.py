@@ -85,3 +85,18 @@ class EmailNotifier:
             "Job Alert test email",
             "This is a test email from your local Job Alert setup.\n\nIf you received this, the sender account and app password are working.\n",
         )
+
+    def send_periodic_summary(self, site_label: str, jobs: list[JobPosting], *, period: str) -> str:
+        subject = f"{period.title()} summary: {site_label} ({len(jobs)} matching role(s))"
+        lines = [f"{period.title()} summary for {site_label}", ""]
+        for job in jobs:
+            lines.append(job.title)
+            if job.location:
+                lines.append(f"Location: {job.location}")
+            if job.posted_text:
+                lines.append(f"Posted: {job.posted_text}")
+            if job.matched_terms:
+                lines.append(f"Matched: {', '.join(job.matched_terms)}")
+            lines.append(job.url)
+            lines.append("")
+        return self.send_message(subject, "\n".join(lines).strip() + "\n")
