@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+import time
 import uuid
 from textwrap import dedent
 from typing import Any
@@ -26,6 +27,8 @@ from .utils import list_to_textarea, textarea_to_list
 _RUN_TASKS_LOCK = threading.Lock()
 _RUN_TASKS: dict[str, dict[str, Any]] = {}
 _ACTIVE_RUN_TASK_ID: str | None = None
+_UI_SESSIONS_LOCK = threading.Lock()
+_UI_SESSIONS: dict[str, float] = {}
 
 
 PROFILE_YAML_EXAMPLE = dedent(
@@ -325,6 +328,47 @@ def _start_run_task(redirect_url: str) -> tuple[str, bool]:
     worker = threading.Thread(target=_run_background_task, args=(task_id,), daemon=True)
     worker.start()
     return task_id, True
+
+
+def _touch_ui_session(session_id: str) -> None:
+    if not session_id:
+        return
+    with _UI_SESSIONS_LOCK:
+        _UI_SESSIONS[session_id] = time.monotonic()
+
+
+def _remove_ui_session(session_id: str) -> None:
+    if not session_id:
+        return
+    with _UI_SESSIONS_LOCK:
+        _UI_SESSIONS.pop(session_id, None)
+
+
+def cleanup_ui_sessions(stale_after_seconds: int = 90) -> None:
+    cutoff = time.monotonic() - stale_after_seconds
+    with _UI_SESSIONS_LOCK:
+        stale_ids = [session_id for session_id, last_seen in _UI_SESSIONS.items() if last_seen < cutoff]
+        for session_id in stale_ids:
+            _UI_SESSIONS.pop(session_id, None)
+
+
+def ui_runtime_state() -> dict[str, Any]:
+    cleanup_ui_sessions()
+    with _UI_SESSIONS_LOCK, _RUN_TASKS_LOCK:
+        return {
+            "active_session_count": len(_UI_SESSIONS),
+            "has_active_run": bool(_ACTIVE_RUN_TASK_ID),
+        }
+
+
+def _request_text(name: str) -> str:
+    value = request.form.get(name, "").strip()
+    if value:
+        return value
+    if request.is_json:
+        payload = request.get_json(silent=True) or {}
+        return str(payload.get(name, "")).strip()
+    return ""
 
 
 def _build_site_ai_prompt(site: SiteConfig | None) -> str:
@@ -649,6 +693,29 @@ def create_app() -> Flask:
         if not snapshot:
             return jsonify({"ok": False, "error": "Run task not found."}), 404
         return jsonify({"ok": True, "task": snapshot})
+
+    @app.post("/ui/session/start")
+    def start_ui_session():
+        session_id = _request_text("session_id")
+        if not session_id:
+            return jsonify({"ok": False, "error": "Missing session id."}), 400
+        _touch_ui_session(session_id)
+        return jsonify({"ok": True, "session_id": session_id})
+
+    @app.post("/ui/session/ping")
+    def ping_ui_session():
+        session_id = _request_text("session_id")
+        if not session_id:
+            return jsonify({"ok": False, "error": "Missing session id."}), 400
+        _touch_ui_session(session_id)
+        return jsonify({"ok": True})
+
+    @app.post("/ui/session/stop")
+    def stop_ui_session():
+        session_id = _request_text("session_id")
+        if session_id:
+            _remove_ui_session(session_id)
+        return jsonify({"ok": True})
 
     @app.post("/scheduler/apply")
     def apply_scheduler():

@@ -8,6 +8,75 @@ const escapeHtml = (value) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
+const createSessionId = () => {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+  return `job-alert-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+const postUiSession = async (url, sessionId) => {
+  const payload = new URLSearchParams({ session_id: sessionId });
+  const response = await fetch(url, {
+    method: "POST",
+    body: payload,
+    headers: { Accept: "application/json" },
+    keepalive: true,
+  });
+  return response;
+};
+
+let uiSessionId = "";
+
+try {
+  uiSessionId = window.sessionStorage.getItem("jobAlertUiSessionId") || "";
+  if (!uiSessionId) {
+    uiSessionId = createSessionId();
+    window.sessionStorage.setItem("jobAlertUiSessionId", uiSessionId);
+  }
+} catch (error) {
+  uiSessionId = createSessionId();
+}
+
+if (uiSessionId) {
+  const startHeartbeat = async () => {
+    try {
+      await postUiSession("/ui/session/start", uiSessionId);
+    } catch (error) {
+      console.error("UI session start failed", error);
+    }
+  };
+
+  const pingHeartbeat = async () => {
+    try {
+      await postUiSession("/ui/session/ping", uiSessionId);
+    } catch (error) {
+      console.error("UI session ping failed", error);
+    }
+  };
+
+  const stopHeartbeat = () => {
+    const payload = new URLSearchParams({ session_id: uiSessionId });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon("/ui/session/stop", payload);
+      return;
+    }
+    void fetch("/ui/session/stop", {
+      method: "POST",
+      body: payload,
+      headers: { Accept: "application/json" },
+      keepalive: true,
+    });
+  };
+
+  void startHeartbeat();
+  window.setInterval(() => {
+    void pingHeartbeat();
+  }, 20000);
+  window.addEventListener("beforeunload", stopHeartbeat);
+  window.addEventListener("pagehide", stopHeartbeat);
+}
+
 let activateTab = () => {};
 
 if (tabShell) {
