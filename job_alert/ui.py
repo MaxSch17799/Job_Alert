@@ -4,7 +4,7 @@ from textwrap import dedent
 from typing import Any
 
 import yaml
-from flask import Flask, flash, redirect, render_template, request, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 
 from .config import (
     load_config,
@@ -403,6 +403,39 @@ def create_app() -> Flask:
         else:
             flash(f"Test failed for {result.label}: {result.warning}", "danger")
         return redirect(url_for("index", tab="job-alerts"))
+
+    @app.get("/sites/<site_id>/preview")
+    def preview_site(site_id: str):
+        config = load_config()
+        site = next((item for item in config.sites if item.id == site_id), None)
+        if not site:
+            return jsonify({"ok": False, "error": "Site not found."}), 404
+
+        runner = JobAlertRunner()
+        result = runner.test_site(site_id)
+        payload = {
+            "ok": result.success,
+            "site_id": site.id,
+            "label": site.label,
+            "source_url": site.source_url,
+            "adapter_name": result.adapter_name,
+            "resolved_url": result.resolved_url,
+            "jobs_found": result.jobs_found,
+            "matched_count": len(result.matched_jobs),
+            "warning": result.warning,
+            "notes": result.notes,
+            "jobs": [
+                {
+                    "title": job.title,
+                    "url": job.url,
+                    "location": job.location,
+                    "posted_text": job.posted_text,
+                    "matched_terms": job.matched_terms,
+                }
+                for job in result.matched_jobs
+            ],
+        }
+        return jsonify(payload)
 
     @app.post("/run-now")
     def run_now():
