@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Callable
 
 from .adapters import get_adapter, resolve_site
 from .adapters.base import AdapterContext, create_session
@@ -34,16 +35,48 @@ class JobAlertRunner:
         site = next(site for site in config.sites if site.id == site_id)
         return self._run_site(site, config, preview=True)
 
-    def run_all(self) -> RunSummary:
+    def run_all(self, progress_callback: Callable[[dict], None] | None = None) -> RunSummary:
         config = load_config()
         notifier = self._notifier(config)
         summary = RunSummary(started_at=utc_now_iso())
         digest_jobs = []
         bootstrap_jobs = []
+        enabled_sites = [site for site in config.sites if site.enabled]
+        total_sites = len(enabled_sites)
 
-        for site in [site for site in config.sites if site.enabled]:
+        def emit(**payload) -> None:
+            if progress_callback:
+                progress_callback(payload)
+
+        emit(
+            phase="starting",
+            status="running",
+            started_at=summary.started_at,
+            total_sites=total_sites,
+            completed_sites=0,
+            message=f"Starting a full run across {total_sites} enabled site(s).",
+        )
+
+        for index, site in enumerate(enabled_sites, start=1):
+            emit(
+                phase="site_start",
+                status="running",
+                current_site=site.label,
+                total_sites=total_sites,
+                completed_sites=index - 1,
+                message=f"Checking {site.label} ({index} of {total_sites}).",
+            )
             result = self._run_site(site, config, preview=False)
             summary.site_results.append(result)
+            site_status_text = "succeeded" if result.success else "failed"
+            emit(
+                phase="site_done",
+                status="running",
+                current_site=site.label,
+                total_sites=total_sites,
+                completed_sites=index,
+                message=f"Finished {site.label}: {site_status_text}.",
+            )
             if result.success:
                 if site.alerts.immediate_new_jobs:
                     if result.bootstrap:
@@ -83,6 +116,15 @@ class JobAlertRunner:
                         self.logger.exception("Failed to send failure email for %s", site.id)
                         self.db.log_run(site.id, "failure-email", str(exc))
 
+        emit(
+            phase="sending_notifications",
+            status="running",
+            total_sites=total_sites,
+            completed_sites=total_sites,
+            current_site="",
+            message="Sending any digest or failure emails that were queued during the run.",
+        )
+
         if notifier.is_configured() and bootstrap_jobs:
             try:
                 summary.emails_sent.append(notifier.send_jobs_digest(bootstrap_jobs, bootstrap=True))
@@ -98,6 +140,14 @@ class JobAlertRunner:
                 self.db.log_run(None, "email-failure", str(exc))
 
         summary.finished_at = utc_now_iso()
+        emit(
+            phase="wrapping_up",
+            status="running",
+            total_sites=total_sites,
+            completed_sites=total_sites,
+            current_site="",
+            message="Wrapping up the run and saving the final summary.",
+        )
         return summary
 
     def _run_site(self, site: SiteConfig, config, *, preview: bool) -> SiteRunResult:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+import uuid
 from textwrap import dedent
 from typing import Any
 
@@ -19,6 +21,11 @@ from .notifier import EmailNotifier
 from .runner import JobAlertRunner
 from .scheduler import SchedulerService
 from .utils import list_to_textarea, textarea_to_list
+
+
+_RUN_TASKS_LOCK = threading.Lock()
+_RUN_TASKS: dict[str, dict[str, Any]] = {}
+_ACTIVE_RUN_TASK_ID: str | None = None
 
 
 PROFILE_YAML_EXAMPLE = dedent(
@@ -197,6 +204,127 @@ def _update_scheduler_from_form(config, form: dict[str, str], list_parser) -> No
     config.scheduler.interval = _coerce_positive_int(form.get("scheduler_interval"), config.scheduler.interval or 1)
     config.scheduler.time = form.get("scheduler_time", config.scheduler.time).strip() or "08:00"
     config.scheduler.weekdays = list_parser(form.get("scheduler_weekdays")) or ["MON"]
+
+
+def _append_task_event(task: dict[str, Any], message: str) -> None:
+    cleaned = (message or "").strip()
+    if not cleaned:
+        return
+    events = task.setdefault("events", [])
+    if events and events[-1] == cleaned:
+        return
+    events.append(cleaned)
+    if len(events) > 8:
+        del events[:-8]
+
+
+def _compute_task_percent(task: dict[str, Any]) -> int:
+    if task.get("status") == "completed":
+        return 100
+    if task.get("status") == "failed":
+        return max(int(task.get("percent", 0) or 0), 100)
+
+    total_sites = int(task.get("total_sites") or 0)
+    completed_sites = int(task.get("completed_sites") or 0)
+    phase = str(task.get("phase") or "")
+
+    if total_sites <= 0:
+        return 5
+
+    base = int((completed_sites / total_sites) * 88)
+    if phase == "site_start":
+        return max(8, min(90, base + 6))
+    if phase == "sending_notifications":
+        return max(92, min(98, base + 8))
+    if phase == "wrapping_up":
+        return 99
+    return max(8, min(90, base))
+
+
+def _task_snapshot(task_id: str) -> dict[str, Any] | None:
+    with _RUN_TASKS_LOCK:
+        task = _RUN_TASKS.get(task_id)
+        if not task:
+            return None
+        snapshot = dict(task)
+        snapshot["events"] = list(task.get("events", []))
+        return snapshot
+
+
+def _update_task(task_id: str, **updates: Any) -> None:
+    with _RUN_TASKS_LOCK:
+        task = _RUN_TASKS.get(task_id)
+        if not task:
+            return
+        task.update(updates)
+        if "message" in updates:
+            _append_task_event(task, str(updates.get("message") or ""))
+        task["percent"] = _compute_task_percent(task)
+
+
+def _run_background_task(task_id: str) -> None:
+    global _ACTIVE_RUN_TASK_ID
+
+    try:
+        def progress_callback(payload: dict[str, Any]) -> None:
+            _update_task(task_id, **payload)
+
+        summary = JobAlertRunner().run_all(progress_callback=progress_callback)
+        _update_task(
+            task_id,
+            status="completed",
+            phase="finished",
+            finished_at=summary.finished_at,
+            message="Run complete. Reloading the page will show the updated site status and diagnostics.",
+            summary_text=summary.render_text(),
+            completed_sites=len(summary.site_results),
+        )
+    except Exception as exc:
+        _update_task(
+            task_id,
+            status="failed",
+            phase="failed",
+            finished_at="",
+            message=f"Run failed: {exc}",
+            error=str(exc),
+        )
+    finally:
+        with _RUN_TASKS_LOCK:
+            if _ACTIVE_RUN_TASK_ID == task_id:
+                _ACTIVE_RUN_TASK_ID = None
+
+
+def _start_run_task(redirect_url: str) -> tuple[str, bool]:
+    global _ACTIVE_RUN_TASK_ID
+
+    with _RUN_TASKS_LOCK:
+        if _ACTIVE_RUN_TASK_ID:
+            existing = _RUN_TASKS.get(_ACTIVE_RUN_TASK_ID)
+            if existing and existing.get("status") == "running":
+                return _ACTIVE_RUN_TASK_ID, False
+
+        task_id = uuid.uuid4().hex
+        _RUN_TASKS[task_id] = {
+            "task_id": task_id,
+            "status": "running",
+            "phase": "starting",
+            "message": "Preparing the full scrape run.",
+            "current_site": "",
+            "completed_sites": 0,
+            "total_sites": 0,
+            "percent": 5,
+            "events": ["Preparing the full scrape run."],
+            "started_at": "",
+            "finished_at": "",
+            "summary_text": "",
+            "error": "",
+            "redirect_url": redirect_url,
+        }
+        _ACTIVE_RUN_TASK_ID = task_id
+
+    worker = threading.Thread(target=_run_background_task, args=(task_id,), daemon=True)
+    worker.start()
+    return task_id, True
 
 
 def _build_site_ai_prompt(site: SiteConfig | None) -> str:
@@ -500,6 +628,27 @@ def create_app() -> Flask:
         if wizard_topic:
             return redirect(url_for("index", tab="setup", wizard=wizard_topic))
         return redirect(url_for("index", tab="diagnostics"))
+
+    @app.post("/run-now/start")
+    def start_run_now():
+        redirect_url = request.form.get("redirect_to", "").strip() or url_for("index", tab="diagnostics")
+        task_id, started = _start_run_task(redirect_url)
+        snapshot = _task_snapshot(task_id)
+        return jsonify(
+            {
+                "ok": True,
+                "task_id": task_id,
+                "started": started,
+                "task": snapshot,
+            }
+        )
+
+    @app.get("/run-now/status/<task_id>")
+    def run_now_status(task_id: str):
+        snapshot = _task_snapshot(task_id)
+        if not snapshot:
+            return jsonify({"ok": False, "error": "Run task not found."}), 404
+        return jsonify({"ok": True, "task": snapshot})
 
     @app.post("/scheduler/apply")
     def apply_scheduler():

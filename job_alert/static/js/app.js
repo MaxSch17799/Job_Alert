@@ -328,3 +328,219 @@ if (previewModal) {
     }
   });
 }
+
+const runProgressModal = document.getElementById("run-progress-modal");
+
+if (runProgressModal) {
+  const runForms = document.querySelectorAll("[data-run-progress]");
+  const closeButtons = runProgressModal.querySelectorAll("[data-close-run-progress]");
+  const titleNode = document.getElementById("run-progress-title");
+  const subtitleNode = document.getElementById("run-progress-subtitle");
+  const percentNode = document.getElementById("run-progress-percent");
+  const countNode = document.getElementById("run-progress-count");
+  const fillNode = document.getElementById("run-progress-fill");
+  const metaNode = document.getElementById("run-progress-meta");
+  const currentStepNode = document.getElementById("run-progress-current-step");
+  const currentSiteNode = document.getElementById("run-progress-current-site");
+  const eventsNode = document.getElementById("run-progress-events");
+  const summaryPanel = document.getElementById("run-progress-summary-panel");
+  const summaryNode = document.getElementById("run-progress-summary");
+  const openLink = document.getElementById("run-progress-open-link");
+
+  let activeTaskId = null;
+  let pollTimer = null;
+  let autoRefreshTimer = null;
+
+  const openProgress = () => {
+    runProgressModal.classList.remove("hidden");
+  };
+
+  const closeProgress = () => {
+    runProgressModal.classList.add("hidden");
+  };
+
+  const clearProgressTimers = () => {
+    if (pollTimer) {
+      window.clearInterval(pollTimer);
+      pollTimer = null;
+    }
+    if (autoRefreshTimer) {
+      window.clearTimeout(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
+  };
+
+  const renderRunEvents = (events) => {
+    if (!events || !events.length) {
+      eventsNode.innerHTML = "<p class=\"small\">Waiting for the first progress update...</p>";
+      return;
+    }
+    eventsNode.innerHTML = events
+      .slice()
+      .reverse()
+      .map(
+        (message) => `
+          <article class="diag-item">
+            <div class="small">${escapeHtml(message)}</div>
+          </article>
+        `,
+      )
+      .join("");
+  };
+
+  const renderRunTask = (task) => {
+    const status = task.status || "running";
+    const percent = Number(task.percent || 0);
+    const totalSites = Number(task.total_sites || 0);
+    const completedSites = Number(task.completed_sites || 0);
+    const redirectUrl = task.redirect_url || "/?tab=diagnostics";
+
+    titleNode.textContent = status === "completed" ? "Scrape Run Complete" : status === "failed" ? "Scrape Run Failed" : "Scrape Run In Progress";
+    subtitleNode.textContent = task.message || "Running...";
+    percentNode.textContent = `${percent}%`;
+    countNode.textContent = `${completedSites} of ${totalSites} site${totalSites === 1 ? "" : "s"} completed`;
+    fillNode.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+
+    currentStepNode.textContent = task.message || "Running...";
+    currentSiteNode.textContent = task.current_site ? `Current site: ${task.current_site}` : "Current site: none right now";
+    metaNode.innerHTML = `
+      <div class="preview-meta-row">
+        <span class="preview-status ${status === "completed" ? "success" : status === "failed" ? "failure" : "success"}">status: ${escapeHtml(status)}</span>
+        <span class="small">Started: ${escapeHtml(task.started_at || "-")}</span>
+        ${task.finished_at ? `<span class="small">Finished: ${escapeHtml(task.finished_at)}</span>` : ""}
+      </div>
+    `;
+
+    renderRunEvents(task.events || []);
+
+    if (task.summary_text) {
+      summaryPanel.classList.remove("hidden");
+      summaryNode.textContent = task.summary_text;
+    } else {
+      summaryPanel.classList.add("hidden");
+      summaryNode.textContent = "";
+    }
+
+    if (status === "completed" || status === "failed") {
+      openLink.classList.remove("hidden");
+      openLink.href = redirectUrl;
+      if (status === "completed" && !autoRefreshTimer) {
+        autoRefreshTimer = window.setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 1600);
+      }
+    } else {
+      openLink.classList.add("hidden");
+      openLink.href = redirectUrl;
+    }
+  };
+
+  const pollRunTask = async () => {
+    if (!activeTaskId) {
+      return;
+    }
+    try {
+      const response = await fetch(`/run-now/status/${encodeURIComponent(activeTaskId)}`, {
+        headers: { Accept: "application/json" },
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || "Could not read run progress.");
+      }
+      renderRunTask(payload.task);
+      if (payload.task.status === "completed" || payload.task.status === "failed") {
+        if (pollTimer) {
+          window.clearInterval(pollTimer);
+          pollTimer = null;
+        }
+      }
+    } catch (error) {
+      subtitleNode.textContent = "Could not update run progress";
+      currentStepNode.textContent = error.message || "Unknown error.";
+      if (pollTimer) {
+        window.clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+  };
+
+  const startRunProgress = async (form) => {
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalLabel = submitButton ? submitButton.textContent : "";
+    const formData = new FormData(form);
+
+    if (wizard && !wizard.classList.contains("hidden")) {
+      wizard.classList.add("hidden");
+    }
+
+    clearProgressTimers();
+    activeTaskId = null;
+    titleNode.textContent = "Scrape Run In Progress";
+    subtitleNode.textContent = "Starting the scrape run...";
+    percentNode.textContent = "0%";
+    countNode.textContent = "0 of 0 sites completed";
+    fillNode.style.width = "0%";
+    metaNode.innerHTML = "";
+    currentStepNode.textContent = "Starting the scrape run...";
+    currentSiteNode.textContent = "Current site: not started yet";
+    eventsNode.innerHTML = "<p class=\"small\">Starting the scraper...</p>";
+    summaryPanel.classList.add("hidden");
+    summaryNode.textContent = "";
+    openLink.classList.add("hidden");
+    openProgress();
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Starting...";
+    }
+
+    try {
+      const response = await fetch("/run-now/start", {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || "Could not start the scrape run.");
+      }
+      activeTaskId = payload.task_id;
+      renderRunTask(payload.task);
+      await pollRunTask();
+      if (!pollTimer) {
+        pollTimer = window.setInterval(() => {
+          void pollRunTask();
+        }, 1000);
+      }
+    } catch (error) {
+      titleNode.textContent = "Scrape Run Failed To Start";
+      subtitleNode.textContent = error.message || "Unknown error.";
+      currentStepNode.textContent = "The run did not start.";
+      currentSiteNode.textContent = "";
+      renderRunEvents([error.message || "Unknown error."]);
+      openLink.classList.remove("hidden");
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalLabel;
+      }
+    }
+  };
+
+  runForms.forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      void startRunProgress(form);
+    });
+  });
+
+  closeButtons.forEach((button) => {
+    button.addEventListener("click", closeProgress);
+  });
+
+  runProgressModal.addEventListener("click", (event) => {
+    if (event.target === runProgressModal) {
+      closeProgress();
+    }
+  });
+}

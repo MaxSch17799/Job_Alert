@@ -509,6 +509,43 @@ textarea[readonly] {
   width: 1%;
 }
 
+.progress-card {
+  width: min(820px, 100%);
+}
+
+.progress-shell {
+  display: grid;
+  gap: 10px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 16px;
+  border-radius: 999px;
+  background: #efe3d2;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #d9742d 0%, #c65b1f 100%);
+  transition: width 0.35s ease;
+}
+
+.progress-log-panel {
+  margin: 0;
+}
+
 .preview-card {
   width: min(900px, 100%);
 }

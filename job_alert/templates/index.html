@@ -234,8 +234,9 @@
             <li>This first run stores the current job state so the app can distinguish future new jobs from already-seen ones.</li>
             <li>After that, use the `Job Alerts` tab and the `Check Current Matches` button to inspect sites live.</li>
           </ol>
-          <form class="inline-actions" method="post" action="{{ url_for('run_now') }}">
+          <form class="inline-actions" method="post" action="{{ url_for('run_now') }}" data-run-progress>
             <input type="hidden" name="wizard_topic" value="first-run">
+            <input type="hidden" name="redirect_to" value="{{ url_for('index', tab='diagnostics') }}">
             <button class="button" type="submit">Run First Check Now</button>
             <button class="button ghost small" type="button" data-tab-target="job-alerts" data-close-wizard>Open Job Alerts Tab</button>
             <button class="button ghost small" type="button" data-tab-target="diagnostics" data-close-wizard>Open Diagnostics Tab</button>
@@ -433,7 +434,8 @@
           <p>This is the list of monitored sites. Open the websites directly, check the current matching jobs in a popup, or edit the site settings.</p>
         </div>
         <div class="inline-actions">
-          <form method="post" action="{{ url_for('run_now') }}">
+          <form method="post" action="{{ url_for('run_now') }}" data-run-progress>
+            <input type="hidden" name="redirect_to" value="{{ url_for('index', tab='diagnostics') }}">
             <button class="button" type="submit">Run Now</button>
           </form>
           <a class="button ghost" href="{{ url_for('new_site') }}">Add Site</a>
@@ -563,6 +565,56 @@
     <div class="preview-meta" id="site-preview-meta"></div>
     <div class="preview-body" id="site-preview-body">
       <p class="small">Loading current jobs for this site...</p>
+    </div>
+  </div>
+</section>
+
+<section class="wizard hidden" id="run-progress-modal">
+  <div class="wizard-card progress-card">
+    <div class="panel-header">
+      <div>
+        <h2 id="run-progress-title">Scrape Run In Progress</h2>
+        <p id="run-progress-subtitle">Preparing the run...</p>
+      </div>
+      <button class="button ghost small" type="button" data-close-run-progress>Hide</button>
+    </div>
+    <div class="progress-shell">
+      <div class="progress-header">
+        <strong id="run-progress-percent">0%</strong>
+        <span class="small" id="run-progress-count">0 of 0 sites completed</span>
+      </div>
+      <div class="progress-bar-track" aria-hidden="true">
+        <div class="progress-bar-fill" id="run-progress-fill"></div>
+      </div>
+    </div>
+    <div class="preview-meta" id="run-progress-meta"></div>
+    <div class="preview-body">
+      <article class="preview-job">
+        <h3 id="run-progress-current-step">Waiting to start...</h3>
+        <p class="small" id="run-progress-current-site"></p>
+      </article>
+      <section class="panel progress-log-panel">
+        <div class="panel-header">
+          <div>
+            <h3>Run Log</h3>
+            <p>Latest steps from the current scrape.</p>
+          </div>
+        </div>
+        <div class="diagnostics-list" id="run-progress-events"></div>
+      </section>
+      <section class="panel hidden" id="run-progress-summary-panel">
+        <div class="panel-header">
+          <div>
+            <h3>Run Summary</h3>
+            <p>The final result from this scrape run.</p>
+          </div>
+        </div>
+        <pre class="code-block" id="run-progress-summary"></pre>
+      </section>
+    </div>
+    <div class="wizard-footer">
+      <button class="button ghost small" type="button" data-close-run-progress>Hide</button>
+      <a class="button small hidden" href="{{ url_for('index', tab='diagnostics') }}" id="run-progress-open-link">Open Updated Page</a>
     </div>
   </div>
 </section>
