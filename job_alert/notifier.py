@@ -21,11 +21,11 @@ class EmailNotifier:
     ) -> None:
         self.smtp_host = smtp_host
         self.smtp_port = smtp_port
-        self.smtp_username = smtp_username or sender_email
-        self.smtp_app_password = smtp_app_password
-        self.sender_email = sender_email
+        self.smtp_username = (smtp_username or sender_email).strip()
+        self.smtp_app_password = "".join(str(smtp_app_password or "").split())
+        self.sender_email = sender_email.strip()
         self.sender_name = sender_name or "Job Alert"
-        self.recipient_emails = [item for item in recipient_emails if item]
+        self.recipient_emails = [item.strip() for item in recipient_emails if item and item.strip()]
 
     def is_configured(self) -> bool:
         return bool(
@@ -45,10 +45,19 @@ class EmailNotifier:
         message["From"] = f"{self.sender_name} <{self.sender_email}>"
         message["To"] = ", ".join(self.recipient_emails)
         message.set_content(body)
-        with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=30) as client:
-            client.starttls()
-            client.login(self.smtp_username, self.smtp_app_password)
-            client.send_message(message)
+        try:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=30) as client:
+                client.starttls()
+                client.login(self.smtp_username, self.smtp_app_password)
+                client.send_message(message)
+        except smtplib.SMTPAuthenticationError as exc:
+            smtp_error = exc.smtp_error.decode("utf-8", errors="replace") if isinstance(exc.smtp_error, bytes) else str(exc.smtp_error)
+            raise RuntimeError(
+                "Gmail rejected the login. Check that 2-Step Verification is enabled on the sender account, "
+                "that you used a fresh Gmail App Password for this exact Gmail account, that Advanced Protection "
+                "is not enabled, and that the app password was pasted without spaces. "
+                f"Gmail said: {smtp_error}"
+            ) from exc
         return f"{subject} -> {', '.join(self.recipient_emails)}"
 
     def send_jobs_digest(self, jobs: list[JobPosting], *, bootstrap: bool = False) -> str:
