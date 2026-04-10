@@ -42,11 +42,21 @@ py -m venv .venv
 
 6. Open the shown `http://127.0.0.1:5000` address in your browser.
 
+Windows shortcut option:
+
+- double-click [Start Job Alert UI.cmd](C:\Users\maxsc\Desktop\Passion projects\Job_Alert\Start Job Alert UI.cmd)
+- or create a desktop shortcut that points to [Start Job Alert UI.cmd](C:\Users\maxsc\Desktop\Passion projects\Job_Alert\Start Job Alert UI.cmd)
+- this avoids the PowerShell execution-policy problem entirely because it does not call `Activate.ps1`
+
 ## Run A Scrape Manually
 
 ```powershell
 .venv\Scripts\python.exe run_job_alert.py
 ```
+
+Windows double-click option:
+
+- double-click [Run Job Alert Once.cmd](C:\Users\maxsc\Desktop\Passion projects\Job_Alert\Run Job Alert Once.cmd)
 
 ## Gmail Notes
 
