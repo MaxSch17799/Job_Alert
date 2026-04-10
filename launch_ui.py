@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import socket
+import subprocess
+import sys
 import threading
 import webbrowser
 
@@ -13,6 +16,50 @@ URL = f"http://{HOST}:{PORT}"
 app = create_app()
 
 
+def listener_pid(port: int) -> int | None:
+    command = [
+        "powershell",
+        "-NoProfile",
+        "-Command",
+        f"$conn = Get-NetTCPConnection -LocalPort {port} -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; if ($conn) {{ Write-Output $conn.OwningProcess }}",
+    ]
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode != 0:
+        return None
+    raw = result.stdout.strip()
+    return int(raw) if raw.isdigit() else None
+
+
+def process_command_line(pid: int) -> str:
+    command = [
+        "powershell",
+        "-NoProfile",
+        "-Command",
+        f"$proc = Get-CimInstance Win32_Process -Filter \"ProcessId = {pid}\"; if ($proc) {{ Write-Output $proc.CommandLine }}",
+    ]
+    result = subprocess.run(command, capture_output=True, text=True)
+    return result.stdout.strip()
+
+
+def ensure_port_available(host: str, port: int) -> None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        in_use = sock.connect_ex((host, port)) == 0
+    if not in_use:
+        return
+
+    pid = listener_pid(port)
+    if pid is None:
+        raise RuntimeError(f"Port {port} is already in use.")
+
+    command_line = process_command_line(pid)
+    if "launch_ui.py" in command_line:
+        subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True, text=True)
+        return
+
+    raise RuntimeError(f"Port {port} is already in use by another program (PID {pid}).")
+
+
 def open_browser() -> None:
     try:
         webbrowser.open(URL)
@@ -21,5 +68,10 @@ def open_browser() -> None:
 
 
 if __name__ == "__main__":
+    try:
+        ensure_port_available(HOST, PORT)
+    except RuntimeError as exc:
+        print(exc)
+        sys.exit(1)
     threading.Timer(1.0, open_browser).start()
     app.run(host=HOST, port=PORT, debug=False, use_reloader=False)
