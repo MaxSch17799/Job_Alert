@@ -120,6 +120,12 @@ label {
   font-weight: 600;
 }
 
+.field-help {
+  font-size: 0.86rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
 input, textarea, select, button {
   font: inherit;
 }
@@ -445,6 +451,24 @@ textarea[readonly] {
 .wizard-topic {
   display: grid;
   gap: 16px;
+}
+
+.wizard-step-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.wizard-step-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  background: #fff;
+  display: grid;
+  gap: 10px;
+}
+
+.wizard-step-card h4 {
+  margin: 0;
 }
 
 .wizard-form {

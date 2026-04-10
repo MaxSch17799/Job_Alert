@@ -65,24 +65,119 @@
 
         <section class="wizard-topic" data-wizard-topic-panel="email">
           <h3>Email Setup</h3>
-          <ol class="wizard-list">
-            <li>Create or choose the Gmail account that will send the alerts. A dedicated alert Gmail is the cleanest setup.</li>
-            <li>In that Gmail account, turn on 2-Step Verification and create a Gmail App Password for this tool.</li>
-            <li>Enter the account details below and click `Save + Send Test Email` to confirm it works immediately.</li>
-          </ol>
+          <div class="wizard-step-stack">
+            <article class="wizard-step-card">
+              <span class="status-label">Step 1</span>
+              <h4>Pick the Gmail account that will send the alerts</h4>
+              <p>Use the Gmail account that should send the job-alert emails. Best practice is a dedicated sender account, while your normal inbox only receives the alerts.</p>
+              <details class="info-block top-gap">
+                <summary>What this means in plain language</summary>
+                <p>This tool does not send email on its own. It logs into one Gmail account and asks Gmail to send the alert for you. That Gmail account is the sender.</p>
+                <p>If you use a separate sender Gmail, the alerts arrive more cleanly and stay separate from your personal mail activity.</p>
+              </details>
+            </article>
+
+            <article class="wizard-step-card">
+              <span class="status-label">Step 2</span>
+              <h4>Turn on 2-Step Verification in that Gmail account</h4>
+              <p>Google blocks normal password login for apps like this. 2-Step Verification must be enabled before Google allows App Passwords.</p>
+              <details class="info-block top-gap">
+                <summary>Exactly where to click</summary>
+                <p>Open the sender Gmail account in your browser, then go to Google Account > Security > 2-Step Verification.</p>
+                <p>If it says 2-Step Verification is off, turn it on and finish Google's setup flow first.</p>
+                <p><a class="site-link" href="https://myaccount.google.com/security" target="_blank" rel="noreferrer">Open Google Security Settings</a></p>
+              </details>
+            </article>
+
+            <article class="wizard-step-card">
+              <span class="status-label">Step 3</span>
+              <h4>Create a Gmail App Password</h4>
+              <p>This is the most important step. The field below does not want your normal Gmail password. It wants a special Google-generated App Password.</p>
+              <details class="info-block top-gap">
+                <summary>What an App Password is</summary>
+                <p>An App Password is a special one-time password Google creates for apps that cannot do the normal browser login flow. It is separate from your real Gmail password.</p>
+                <p>Google usually shows it as a 16-character code, sometimes grouped with spaces. That is normal.</p>
+              </details>
+              <details class="info-block">
+                <summary>How to get it</summary>
+                <p>While logged into the sender Gmail account, open Google Account > Security > App Passwords.</p>
+                <p>Create a new App Password, copy the code Google shows you, and paste that code into the `Gmail App Password` field below.</p>
+                <p><a class="site-link" href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer">Open Google App Passwords</a></p>
+              </details>
+              <details class="info-block">
+                <summary>If you do not see the App Passwords page</summary>
+                <p>That usually means 2-Step Verification is not fully enabled yet, or this Google account has a stricter security mode such as Advanced Protection.</p>
+              </details>
+            </article>
+
+            <article class="wizard-step-card">
+              <span class="status-label">Step 4</span>
+              <h4>Fill in the fields below exactly like this</h4>
+              <details class="info-block top-gap" open>
+                <summary>Field-by-field guide</summary>
+                <p><strong>Sender Email</strong>: the Gmail account that sends the alerts. Example: `job.search.updates.max@gmail.com`.</p>
+                <p><strong>Sender Name</strong>: the friendly name shown in the email. Example: `Job Alert`.</p>
+                <p><strong>SMTP Username</strong>: for Gmail, this should normally be the exact same Gmail address as `Sender Email`.</p>
+                <p><strong>Recipient Emails</strong>: the inbox that should receive the alerts. This can be your personal Gmail.</p>
+                <p><strong>Gmail App Password</strong>: paste the Google-generated App Password here. Do not paste your normal Gmail password.</p>
+              </details>
+            </article>
+
+            <article class="wizard-step-card">
+              <span class="status-label">Step 5</span>
+              <h4>Save and test immediately</h4>
+              <p>Click `Save + Send Test Email`. If it works, the email part of setup is finished. If it fails, expand the troubleshooting help below before changing random fields.</p>
+              <details class="info-block top-gap">
+                <summary>Common mistakes that cause failure</summary>
+                <p>Using the normal Gmail password instead of an App Password.</p>
+                <p>Using an App Password created for a different Google account.</p>
+                <p>Typing a different Gmail address in `Sender Email` and `SMTP Username`.</p>
+                <p>Trying to use App Passwords before 2-Step Verification is fully enabled.</p>
+              </details>
+            </article>
+          </div>
           <form class="wizard-form" method="post" action="{{ url_for('wizard_email') }}">
             <div class="grid two-up">
-              <label>Sender Email<input name="email_sender_email" value="{{ config.email.sender_email }}" autocomplete="email"></label>
-              <label>Sender Name<input name="email_sender_name" value="{{ config.email.sender_name }}"></label>
-              <label>SMTP Username<input name="email_smtp_username" value="{{ config.email.smtp_username }}" autocomplete="username"></label>
-              <label>Recipient Emails<textarea name="email_recipient_emails">{{ list_to_textarea(config.email.recipient_emails) }}</textarea></label>
-              <label class="wide">Gmail App Password<input name="email_smtp_app_password" type="text" value="{{ config.email.smtp_app_password }}" autocomplete="off"></label>
+              <label>
+                Sender Email
+                <span class="field-help">The Gmail account that sends the alerts.</span>
+                <input name="email_sender_email" value="{{ config.email.sender_email }}" autocomplete="email">
+              </label>
+              <label>
+                Sender Name
+                <span class="field-help">The visible sender name shown in the email.</span>
+                <input name="email_sender_name" value="{{ config.email.sender_name }}">
+              </label>
+              <label>
+                SMTP Username
+                <span class="field-help">For Gmail, this should normally be the exact same email as Sender Email.</span>
+                <input name="email_smtp_username" value="{{ config.email.smtp_username }}" autocomplete="username">
+              </label>
+              <label>
+                Recipient Emails
+                <span class="field-help">The inbox that should receive the job alerts. One email per line if you want multiple recipients.</span>
+                <textarea name="email_recipient_emails">{{ list_to_textarea(config.email.recipient_emails) }}</textarea>
+              </label>
+              <label class="wide">
+                Gmail App Password
+                <span class="field-help">Paste the Google-generated App Password here. This is not your normal Gmail password.</span>
+                <input name="email_smtp_app_password" type="text" value="{{ config.email.smtp_app_password }}" autocomplete="off">
+              </label>
             </div>
             <details class="info-block top-gap">
               <summary>Advanced SMTP server settings</summary>
+              <p class="small">Most users should leave these on the Gmail defaults shown below.</p>
               <div class="grid two-up top-gap">
-                <label>SMTP Host<input name="email_smtp_host" value="{{ config.email.smtp_host }}"></label>
-                <label>SMTP Port<input name="email_smtp_port" value="{{ config.email.smtp_port }}"></label>
+                <label>
+                  SMTP Host
+                  <span class="field-help">For Gmail, keep this as `smtp.gmail.com`.</span>
+                  <input name="email_smtp_host" value="{{ config.email.smtp_host }}">
+                </label>
+                <label>
+                  SMTP Port
+                  <span class="field-help">For Gmail, keep this as `587`.</span>
+                  <input name="email_smtp_port" value="{{ config.email.smtp_port }}">
+                </label>
               </div>
             </details>
             <div class="inline-actions top-gap">
@@ -91,8 +186,10 @@
             </div>
           </form>
           <details class="info-block">
-            <summary>Why each email field exists</summary>
-            <p>`Sender Email` is the mailbox Gmail sends from. `SMTP Username` is usually the same Gmail address. `Gmail App Password` is the special password Google gives apps. `Recipients` are the inboxes that receive the alerts.</p>
+            <summary>Quick troubleshooting if the test still fails</summary>
+            <p>If Gmail says `Application-specific password required`, you almost certainly entered the normal Gmail password instead of the Google App Password.</p>
+            <p>If Gmail says the username or password is wrong, create a fresh App Password in the exact sender account and paste it again.</p>
+            <p>If `App Passwords` is missing in your Google account, finish 2-Step Verification first and then check again.</p>
           </details>
         </section>
 
