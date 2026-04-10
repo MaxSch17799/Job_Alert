@@ -2,6 +2,8 @@
 
 Local Windows job-alert scraper with:
 
+- a tabbed local browser UI with Setup, Profile, Job Alerts, and Diagnostics
+- a setup wizard that explains email delivery, Gmail app passwords, scheduling, and first-run checks
 - editable profile and site settings in a local browser UI
 - SQLite state and plain text logs
 - Gmail SMTP notifications
@@ -47,6 +49,7 @@ Windows shortcut option:
 - double-click [Start Job Alert UI.cmd](C:\Users\maxsc\Desktop\Passion projects\Job_Alert\Start Job Alert UI.cmd)
 - or create a desktop shortcut that points to [Start Job Alert UI.cmd](C:\Users\maxsc\Desktop\Passion projects\Job_Alert\Start Job Alert UI.cmd)
 - this avoids the PowerShell execution-policy problem entirely because it does not call `Activate.ps1`
+- the UI now opens in tabs, and the Setup tab is the place to start
 
 ## Run A Scrape Manually
 

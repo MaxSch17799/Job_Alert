@@ -40,3 +40,44 @@ class SchedulerService:
         if result.returncode == 0:
             return True, result.stdout.strip() or "Windows Task Scheduler updated."
         return False, result.stderr.strip() or result.stdout.strip() or "Failed to update Windows Task Scheduler."
+
+    def query_status(self) -> dict[str, str | bool]:
+        try:
+            result = subprocess.run(
+                ["schtasks", "/Query", "/TN", self.TASK_NAME, "/FO", "LIST", "/V"],
+                capture_output=True,
+                text=True,
+                cwd=self.root_dir,
+            )
+        except FileNotFoundError:
+            return {"exists": False, "status": "unavailable", "next_run_time": "", "task_to_run": "", "message": "schtasks is not available."}
+
+        if result.returncode != 0:
+            return {
+                "exists": False,
+                "status": "missing",
+                "next_run_time": "",
+                "task_to_run": "",
+                "message": result.stderr.strip() or result.stdout.strip() or "Task not found.",
+            }
+
+        parsed: dict[str, str | bool] = {
+            "exists": True,
+            "status": "",
+            "next_run_time": "",
+            "task_to_run": "",
+            "message": "",
+        }
+        for line in result.stdout.splitlines():
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            key = key.strip().casefold()
+            value = value.strip()
+            if key == "status":
+                parsed["status"] = value
+            elif key == "next run time":
+                parsed["next_run_time"] = value
+            elif key == "task to run":
+                parsed["task_to_run"] = value
+        return parsed

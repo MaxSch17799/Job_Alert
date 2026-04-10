@@ -20,6 +20,11 @@ from .models import (
 from .utils import CONFIG_PATH, SECRETS_PATH, slugify
 
 
+class _IndentedSafeDumper(yaml.SafeDumper):
+    def increase_indent(self, flow=False, indentless=False):  # type: ignore[override]
+        return super().increase_indent(flow, False)
+
+
 def _read_yaml(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
@@ -30,7 +35,15 @@ def _read_yaml(path: Path) -> dict[str, Any]:
 
 
 def _write_yaml(path: Path, data: dict[str, Any]) -> None:
-    path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    rendered = yaml.dump(
+        data,
+        Dumper=_IndentedSafeDumper,
+        sort_keys=False,
+        allow_unicode=True,
+        default_flow_style=False,
+        indent=2,
+    )
+    path.write_text(rendered, encoding="utf-8")
 
 
 def _positive_int(raw_value: str | int | None, default: int) -> int:
@@ -101,6 +114,9 @@ def update_profile_from_form(config: AppConfig, form: dict[str, str], list_parse
     config.profile.location_any = list_parser(form.get("profile_location_any"))
     config.profile.contract_type_any = list_parser(form.get("profile_contract_type_any"))
     config.profile.language_any = list_parser(form.get("profile_language_any"))
+
+
+def update_setup_from_form(config: AppConfig, form: dict[str, str], list_parser) -> None:
     config.scheduler.mode = form.get("scheduler_mode", "daily").strip() or "daily"
     config.scheduler.interval = _positive_int(form.get("scheduler_interval"), 1)
     config.scheduler.time = form.get("scheduler_time", "08:00").strip() or "08:00"

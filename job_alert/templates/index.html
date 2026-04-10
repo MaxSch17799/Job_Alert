@@ -1,149 +1,392 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="panel">
-  <div class="panel-header">
-    <div>
-      <h2>Run Control</h2>
-      <p>Kick off a scrape immediately or push the current schedule into Windows Task Scheduler.</p>
-    </div>
-    <div class="inline-actions">
-      <form method="post" action="{{ url_for('run_now') }}">
-        <button class="button" type="submit">Run Now</button>
-      </form>
-      <form method="post" action="{{ url_for('apply_scheduler') }}">
-        <button class="button ghost" type="submit">Apply Windows Schedule</button>
-      </form>
-      <form method="post" action="{{ url_for('test_email') }}">
-        <button class="button ghost" type="submit">Send Test Email</button>
-      </form>
-    </div>
-  </div>
-  <p class="mono small">{{ scheduler_command }}</p>
-</section>
+<section class="tab-shell" data-default-tab="{{ active_tab }}">
+  <nav class="tab-bar" aria-label="Main sections">
+    <button class="tab-link" type="button" data-tab-button="setup">Setup</button>
+    <button class="tab-link" type="button" data-tab-button="profile">Profile</button>
+    <button class="tab-link" type="button" data-tab-button="job-alerts">Job Alerts</button>
+    <button class="tab-link" type="button" data-tab-button="diagnostics">Diagnostics</button>
+  </nav>
 
-<section class="grid two-up">
-  <form class="panel" method="post" action="{{ url_for('save_profile') }}">
-    <div class="panel-header">
-      <div>
-        <h2>Profile And Delivery</h2>
-        <p>The default profile applies to new sites unless a site overrides it.</p>
+  <section class="tab-panel" data-tab-panel="setup">
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Setup</h2>
+          <p>Use this page to get the app actually working: sender email, test email, automatic schedule, then a first run.</p>
+        </div>
+        <div class="inline-actions">
+          <button class="button" type="button" data-open-wizard>Open Setup Wizard</button>
+        </div>
       </div>
-    </div>
-    <div class="subpanel">
-      <h3>Gmail Setup In Plain Language</h3>
-      <p>Your app logs into one sender mailbox, hands Gmail the alert, and Gmail sends it to your recipient inboxes. The cleanest setup is a dedicated Gmail sender account with 2-Step Verification and an App Password.</p>
-    </div>
-    <div class="grid two-up">
-      <label>Sender Email<input name="email_sender_email" value="{{ config.email.sender_email }}"></label>
-      <label>Sender Name<input name="email_sender_name" value="{{ config.email.sender_name }}"></label>
-      <label>SMTP Host<input name="email_smtp_host" value="{{ config.email.smtp_host }}"></label>
-      <label>SMTP Port<input name="email_smtp_port" value="{{ config.email.smtp_port }}"></label>
-      <label>SMTP Username<input name="email_smtp_username" value="{{ config.email.smtp_username }}"></label>
-      <label>Recipients<textarea name="email_recipient_emails">{{ list_to_textarea(config.email.recipient_emails) }}</textarea></label>
-      <label class="wide">Gmail App Password<input name="email_smtp_app_password" type="password" value="{{ config.email.smtp_app_password }}"></label>
-      <label>Schedule Mode
-        <select name="scheduler_mode">
-          <option value="daily" {% if config.scheduler.mode == 'daily' %}selected{% endif %}>Every N days</option>
-          <option value="weekly" {% if config.scheduler.mode == 'weekly' %}selected{% endif %}>Every N weeks on weekdays</option>
-        </select>
-      </label>
-      <label>Repeat Interval<input name="scheduler_interval" value="{{ config.scheduler.interval }}"></label>
-      <label>Run Time<input name="scheduler_time" value="{{ config.scheduler.time }}"></label>
-      <label class="wide">Weekdays<textarea name="scheduler_weekdays">{{ list_to_textarea(config.scheduler.weekdays) }}</textarea></label>
-      <label class="check"><input type="checkbox" name="defaults_broad_match" {% if config.defaults.broad_match %}checked{% endif %}> Broad match if include terms do not appear directly</label>
-      <label class="check"><input type="checkbox" name="defaults_alert_on_first_failure" {% if config.defaults.alert_on_first_failure %}checked{% endif %}> Alert on first failure</label>
-      <label class="check"><input type="checkbox" name="defaults_browser_fallback" {% if config.defaults.browser_fallback %}checked{% endif %}> Allow browser fallback for dynamic sites</label>
-      <label class="check"><input type="checkbox" name="defaults_detail_fetch_enabled" {% if config.defaults.detail_fetch_enabled %}checked{% endif %}> Enable detail fetch enrichment later</label>
-      <label>Request Timeout (seconds)<input name="defaults_request_timeout_seconds" value="{{ config.defaults.request_timeout_seconds }}"></label>
-    </div>
-    <div class="grid two-up">
-      <label>Default Include Terms<textarea name="profile_include_any">{{ list_to_textarea(config.profile.include_any) }}</textarea></label>
-      <label>Default Exclude Terms<textarea name="profile_exclude_any">{{ list_to_textarea(config.profile.exclude_any) }}</textarea></label>
-      <label>Default Locations<textarea name="profile_location_any">{{ list_to_textarea(config.profile.location_any) }}</textarea></label>
-      <label>Default Contract Types<textarea name="profile_contract_type_any">{{ list_to_textarea(config.profile.contract_type_any) }}</textarea></label>
-      <label class="wide">Default Languages<textarea name="profile_language_any">{{ list_to_textarea(config.profile.language_any) }}</textarea></label>
-    </div>
-    <button class="button" type="submit">Save Profile Settings</button>
-  </form>
-
-  <form class="panel" method="post" action="{{ url_for('import_profile') }}">
-    <div class="panel-header">
-      <div>
-        <h2>Import Keyword YAML</h2>
-        <p>Paste YAML from another tool or another install. It updates the default profile only.</p>
-      </div>
-    </div>
-    <label class="wide">
-      YAML
-      <textarea name="profile_yaml" class="tall"></textarea>
-    </label>
-    <button class="button ghost" type="submit">Import YAML</button>
-  </form>
-</section>
-
-<section class="panel">
-  <div class="panel-header">
-    <div>
-      <h2>Sites</h2>
-      <p>Overview first, then edit each site in detail.</p>
-    </div>
-  </div>
-  <table class="site-table">
-    <thead>
-      <tr>
-        <th>Site</th>
-        <th>Type</th>
-        <th>Status</th>
-        <th>Resolved URL</th>
-        <th>Failures</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for site in config.sites %}
-        {% set status = status_map.get(site.id) %}
-        <tr>
-          <td>
-            <strong>{{ site.label }}</strong>
-            <div class="small mono">{{ site.id }}</div>
-          </td>
-          <td>{{ status['last_adapter'] if status and status['last_adapter'] else site.type }}</td>
-          <td>
-            {% if status %}
-              <span class="badge {{ status['last_status'] or 'unknown' }}">{{ status['last_status'] or 'unknown' }}</span>
-              <div class="small">{{ status['last_error'] or 'No recent error' }}</div>
-            {% else %}
-              <span class="badge unknown">never-run</span>
-            {% endif %}
-          </td>
-          <td class="mono small">{{ status['resolved_url'] if status else site.source_url }}</td>
-          <td>{{ status['consecutive_failures'] if status else 0 }}</td>
-          <td class="inline-actions">
-            <a class="button small" href="{{ url_for('edit_site', site_id=site.id) }}">Edit</a>
-            <form method="post" action="{{ url_for('test_site', site_id=site.id) }}">
-              <button class="button ghost small" type="submit">Test</button>
-            </form>
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
-
-<section class="panel diagnostics">
-  <details>
-    <summary>Diagnostics</summary>
-    <div class="diagnostics-list">
-      {% for run in runs %}
-        <article class="diag-item">
-          <div><strong>{{ run['status'] }}</strong> | {{ run['site_id'] or 'global' }}</div>
-          <div class="small">{{ run['message'] }}</div>
-          <div class="small mono">{{ run['started_at'] }}</div>
+      <div class="status-grid">
+        <article class="status-card">
+          <span class="status-label">Email Delivery</span>
+          <strong>{{ "Ready" if email_ready else "Missing settings" }}</strong>
+          <p>{{ "A sender account and recipient list are configured." if email_ready else "The app still cannot send emails until you fill in the sender, app password, and recipient." }}</p>
         </article>
-      {% else %}
-        <p>No runs recorded yet.</p>
-      {% endfor %}
-    </div>
-  </details>
+        <article class="status-card">
+          <span class="status-label">Windows Schedule</span>
+          <strong>{{ "Installed" if scheduler_status.exists else "Not installed" }}</strong>
+          <p>{% if scheduler_status.exists %}Next run: {{ scheduler_status.next_run_time or "Unknown" }}{% else %}The app will not run by itself until you click Apply Windows Schedule.{% endif %}</p>
+        </article>
+        <article class="status-card">
+          <span class="status-label">Last Recorded Run</span>
+          <strong>{{ latest_run['status'] if latest_run else "No runs yet" }}</strong>
+          <p>{{ latest_run['started_at'] if latest_run else "Run the scraper once after setup so the first matching jobs can be discovered." }}</p>
+        </article>
+        <article class="status-card">
+          <span class="status-label">Monitored Sites</span>
+          <strong>{{ config.sites|length }}</strong>
+          <p>These are the sites the app will check when it runs on schedule.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wizard hidden" id="setup-wizard">
+      <div class="wizard-card">
+        <div class="panel-header">
+          <div>
+            <h2>Setup Wizard</h2>
+            <p>Follow these steps in order. This wizard tells you what each setting is for and where to fill it in.</p>
+          </div>
+          <button class="button ghost small" type="button" data-close-wizard>Close</button>
+        </div>
+        <div class="wizard-step" data-wizard-step="0">
+          <h3>Step 1: Choose the sender email account</h3>
+          <p>The app cannot send alerts by itself. It needs one mailbox to hand the alert to, and that mailbox sends the email for you.</p>
+          <p>The cleanest setup is a dedicated Gmail account just for alerts, with your normal inbox as the recipient.</p>
+          <div class="inline-actions">
+            <button class="button ghost small" type="button" data-tab-target="setup" data-scroll-target="setup-email-section">Go To Email Settings</button>
+          </div>
+        </div>
+        <div class="wizard-step hidden" data-wizard-step="1">
+          <h3>Step 2: Create a Gmail App Password</h3>
+          <p>Google does not want this app to use your main Gmail password. Instead, turn on 2-Step Verification for the sender account and create an App Password.</p>
+          <p>Paste that App Password into the Gmail App Password field below. That is what lets the tool send alerts safely.</p>
+          <div class="inline-actions">
+            <button class="button ghost small" type="button" data-tab-target="setup" data-scroll-target="setup-email-section">Go To Gmail Fields</button>
+          </div>
+        </div>
+        <div class="wizard-step hidden" data-wizard-step="2">
+          <h3>Step 3: Save and send a test email</h3>
+          <p>After filling in the sender email, SMTP username, app password, and recipients, save the setup and click Send Test Email.</p>
+          <p>If the test email works, the alert delivery is ready.</p>
+          <div class="inline-actions">
+            <button class="button ghost small" type="button" data-tab-target="setup" data-scroll-target="setup-actions-section">Go To Setup Actions</button>
+          </div>
+        </div>
+        <div class="wizard-step hidden" data-wizard-step="3">
+          <h3>Step 4: Choose how often it should run</h3>
+          <p>Set the schedule mode, repeat interval, time, and weekdays if needed. Then click Apply Windows Schedule.</p>
+          <p>That creates the Windows Task Scheduler job so the scraper keeps running without you manually starting it every day.</p>
+          <div class="inline-actions">
+            <button class="button ghost small" type="button" data-tab-target="setup" data-scroll-target="setup-schedule-section">Go To Schedule Settings</button>
+          </div>
+        </div>
+        <div class="wizard-step hidden" data-wizard-step="4">
+          <h3>Step 5: Run it once and check diagnostics</h3>
+          <p>Run the scraper once so the app can discover matching jobs and record the current site status.</p>
+          <p>After that, the Diagnostics tab will show you whether each site succeeded, failed, or needs attention.</p>
+          <div class="inline-actions">
+            <button class="button ghost small" type="button" data-tab-target="job-alerts">Go To Job Alerts</button>
+            <button class="button ghost small" type="button" data-tab-target="diagnostics">Go To Diagnostics</button>
+          </div>
+        </div>
+        <div class="wizard-footer">
+          <button class="button ghost small" type="button" data-wizard-back>Back</button>
+          <button class="button small" type="button" data-wizard-next>Next</button>
+        </div>
+      </div>
+    </section>
+
+    <form class="panel" method="post" action="{{ url_for('save_setup') }}" id="setup-form">
+      <div class="panel-header">
+        <div>
+          <h2>Setup Details</h2>
+          <p>Everything needed for email delivery and automatic runs lives here.</p>
+        </div>
+      </div>
+
+      <section class="subpanel" id="setup-email-section">
+        <div class="section-head">
+          <div>
+            <h3>Email Delivery</h3>
+            <p>These fields tell the app which mailbox sends the alert and which inbox receives it.</p>
+          </div>
+          <details class="info-block">
+            <summary>Why this is needed</summary>
+            <p>The app does not own an email service. It logs into one sender account, hands Gmail the alert, and Gmail sends the message to your recipient inboxes.</p>
+          </details>
+        </div>
+        <div class="grid two-up">
+          <label>Sender Email<input name="email_sender_email" value="{{ config.email.sender_email }}"></label>
+          <label>Sender Name<input name="email_sender_name" value="{{ config.email.sender_name }}"></label>
+          <label>SMTP Username<input name="email_smtp_username" value="{{ config.email.smtp_username }}"></label>
+          <label>Recipients<textarea name="email_recipient_emails">{{ list_to_textarea(config.email.recipient_emails) }}</textarea></label>
+          <label>SMTP Host<input name="email_smtp_host" value="{{ config.email.smtp_host }}"></label>
+          <label>SMTP Port<input name="email_smtp_port" value="{{ config.email.smtp_port }}"></label>
+          <label class="wide">Gmail App Password<input name="email_smtp_app_password" type="password" value="{{ config.email.smtp_app_password }}"></label>
+        </div>
+      </section>
+
+      <section class="subpanel" id="setup-schedule-section">
+        <div class="section-head">
+          <div>
+            <h3>Automatic Schedule</h3>
+            <p>These fields describe how often the scraper should run. After saving, click Apply Windows Schedule below.</p>
+          </div>
+          <details class="info-block">
+            <summary>Why this is needed</summary>
+            <p>Without a Windows scheduled task, the scraper only runs when you launch it manually. The scheduled task is what makes it check jobs on its own.</p>
+          </details>
+        </div>
+        <div class="setup-meta">
+          <span class="badge {{ 'success' if scheduler_status.exists else 'unknown' }}">{{ "installed" if scheduler_status.exists else "not installed" }}</span>
+          <span class="small">Next run: {{ scheduler_status.next_run_time or "Not scheduled yet" }}</span>
+        </div>
+        <div class="grid two-up">
+          <label>Schedule Mode
+            <select name="scheduler_mode">
+              <option value="daily" {% if config.scheduler.mode == 'daily' %}selected{% endif %}>Every N days</option>
+              <option value="weekly" {% if config.scheduler.mode == 'weekly' %}selected{% endif %}>Every N weeks on weekdays</option>
+            </select>
+          </label>
+          <label>Repeat Interval<input name="scheduler_interval" value="{{ config.scheduler.interval }}"></label>
+          <label>Run Time<input name="scheduler_time" value="{{ config.scheduler.time }}"></label>
+          <label class="wide">Weekdays<textarea name="scheduler_weekdays">{{ list_to_textarea(config.scheduler.weekdays) }}</textarea></label>
+        </div>
+        <details class="info-block top-gap">
+          <summary>Generated Windows command</summary>
+          <p class="mono small">{{ scheduler_command }}</p>
+        </details>
+      </section>
+
+      <section class="subpanel">
+        <div class="section-head">
+          <div>
+            <h3>Default Behavior</h3>
+            <p>These are the global scrape rules that affect how strictly matching and failure alerts behave.</p>
+          </div>
+          <details class="info-block">
+            <summary>Why this is needed</summary>
+            <p>These defaults control false positives, browser fallback for difficult sites, and whether the app warns you immediately when a site breaks.</p>
+          </details>
+        </div>
+        <div class="grid two-up">
+          <label class="check"><input type="checkbox" name="defaults_broad_match" {% if config.defaults.broad_match %}checked{% endif %}> Broad match if include terms do not appear directly</label>
+          <label class="check"><input type="checkbox" name="defaults_alert_on_first_failure" {% if config.defaults.alert_on_first_failure %}checked{% endif %}> Alert on first failure</label>
+          <label class="check"><input type="checkbox" name="defaults_browser_fallback" {% if config.defaults.browser_fallback %}checked{% endif %}> Allow browser fallback for dynamic sites</label>
+          <label class="check"><input type="checkbox" name="defaults_detail_fetch_enabled" {% if config.defaults.detail_fetch_enabled %}checked{% endif %}> Enable detail fetch enrichment later</label>
+          <label>Request Timeout (seconds)<input name="defaults_request_timeout_seconds" value="{{ config.defaults.request_timeout_seconds }}"></label>
+        </div>
+      </section>
+
+      <div class="inline-actions top-gap" id="setup-actions-section">
+        <button class="button" type="submit">Save Setup Settings</button>
+      </div>
+    </form>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Setup Actions</h2>
+          <p>Use these after saving the setup form above.</p>
+        </div>
+      </div>
+      <div class="inline-actions">
+        <form method="post" action="{{ url_for('test_email') }}">
+          <button class="button ghost" type="submit">Send Test Email</button>
+        </form>
+        <form method="post" action="{{ url_for('apply_scheduler') }}">
+          <button class="button ghost" type="submit">Apply Windows Schedule</button>
+        </form>
+      </div>
+    </section>
+  </section>
+
+  <section class="tab-panel" data-tab-panel="profile">
+    <form class="panel" method="post" action="{{ url_for('save_profile') }}">
+      <div class="panel-header">
+        <div>
+          <h2>Default Profile</h2>
+          <p>These are your broad default keywords. New sites inherit these unless you override them on the site page.</p>
+        </div>
+      </div>
+      <section class="subpanel">
+        <div class="section-head">
+          <div>
+            <h3>How Matching Works</h3>
+            <p>The scraper uses plain text matching, not AI interpretation during runtime.</p>
+          </div>
+          <details class="info-block">
+            <summary>What this means</summary>
+            <p>Your `include_any` terms should cover the titles and wording you want. Your `exclude_any` terms should only block roles you are truly sure you never want. Location, contract type, and language lists help narrow results without needing hardcoded logic.</p>
+          </details>
+        </div>
+      </section>
+      <div class="grid two-up">
+        <label>Default Include Terms<textarea name="profile_include_any">{{ list_to_textarea(config.profile.include_any) }}</textarea></label>
+        <label>Default Exclude Terms<textarea name="profile_exclude_any">{{ list_to_textarea(config.profile.exclude_any) }}</textarea></label>
+        <label>Default Locations<textarea name="profile_location_any">{{ list_to_textarea(config.profile.location_any) }}</textarea></label>
+        <label>Default Contract Types<textarea name="profile_contract_type_any">{{ list_to_textarea(config.profile.contract_type_any) }}</textarea></label>
+        <label class="wide">Default Languages<textarea name="profile_language_any">{{ list_to_textarea(config.profile.language_any) }}</textarea></label>
+      </div>
+      <div class="inline-actions top-gap">
+        <button class="button" type="submit">Save Default Profile</button>
+      </div>
+    </form>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>YAML Helpers</h2>
+          <p>Use these when you want another AI to generate your keyword lists from your CV, notes, or favourite job ads.</p>
+        </div>
+      </div>
+      <details class="drop-panel">
+        <summary>Import YAML</summary>
+        <form class="top-gap" method="post" action="{{ url_for('import_profile') }}">
+          <label class="wide">YAML<textarea name="profile_yaml" class="tall"></textarea></label>
+          <div class="inline-actions">
+            <button class="button ghost" type="submit">Import YAML Into Default Profile</button>
+          </div>
+        </form>
+      </details>
+      <details class="drop-panel">
+        <summary>Example Format</summary>
+        <p class="small">This is the exact YAML structure the importer expects.</p>
+        <pre class="code-block" id="profile-yaml-example">{{ profile_yaml_example }}</pre>
+        <div class="inline-actions">
+          <button class="button ghost small" type="button" data-copy-target="profile-yaml-example">Copy Example</button>
+        </div>
+      </details>
+      <details class="drop-panel">
+        <summary>AI Prompt Guide</summary>
+        <p class="small">You can give another AI your CV, relevant job ads, or notes together with this prompt so it returns YAML in the right format.</p>
+        <pre class="code-block" id="profile-ai-prompt">{{ profile_ai_prompt }}</pre>
+        <div class="inline-actions">
+          <button class="button ghost small" type="button" data-copy-target="profile-ai-prompt">Copy Prompt</button>
+        </div>
+      </details>
+    </section>
+  </section>
+
+  <section class="tab-panel" data-tab-panel="job-alerts">
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Job Alerts</h2>
+          <p>This is the list of monitored sites. Add, edit, test, or run the whole scraper from here.</p>
+        </div>
+        <div class="inline-actions">
+          <form method="post" action="{{ url_for('run_now') }}">
+            <button class="button" type="submit">Run Now</button>
+          </form>
+          <a class="button ghost" href="{{ url_for('new_site') }}">Add Site</a>
+        </div>
+      </div>
+      <table class="site-table">
+        <thead>
+          <tr>
+            <th>Site</th>
+            <th>Adapter</th>
+            <th>Status</th>
+            <th>Resolved URL</th>
+            <th>Failures</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for site in config.sites %}
+            {% set status = status_map.get(site.id) %}
+            <tr>
+              <td>
+                <strong>{{ site.label }}</strong>
+                <div class="small mono">{{ site.id }}</div>
+              </td>
+              <td>{{ status['last_adapter'] if status and status['last_adapter'] else site.type }}</td>
+              <td>
+                {% if status %}
+                  <span class="badge {{ status['last_status'] or 'unknown' }}">{{ status['last_status'] or 'unknown' }}</span>
+                  <div class="small">{{ status['last_error'] or 'No recent error' }}</div>
+                {% else %}
+                  <span class="badge unknown">never-run</span>
+                {% endif %}
+              </td>
+              <td class="mono small">{{ status['resolved_url'] if status else site.source_url }}</td>
+              <td>{{ status['consecutive_failures'] if status else 0 }}</td>
+              <td class="inline-actions">
+                <a class="button small" href="{{ url_for('edit_site', site_id=site.id) }}">Edit</a>
+                <form method="post" action="{{ url_for('test_site', site_id=site.id) }}">
+                  <button class="button ghost small" type="submit">Test</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </section>
+
+  <section class="tab-panel" data-tab-panel="diagnostics">
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Diagnostics</h2>
+          <p>Use this when a site fails, a board stops working, or you need to see what the last runs did.</p>
+        </div>
+      </div>
+      <div class="diagnostics-list">
+        {% for run in runs %}
+          <article class="diag-item">
+            <div><strong>{{ run['status'] }}</strong> | {{ run['site_id'] or 'global' }}</div>
+            <div class="small">{{ run['message'] }}</div>
+            <div class="small mono">{{ run['started_at'] }}</div>
+          </article>
+        {% else %}
+          <p>No runs recorded yet.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Current Site Health</h2>
+          <p>This is the live state remembered from the last completed checks.</p>
+        </div>
+      </div>
+      <table class="site-table">
+        <thead>
+          <tr>
+            <th>Site</th>
+            <th>Status</th>
+            <th>Last Error</th>
+            <th>Last Success</th>
+            <th>Failures</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for site in config.sites %}
+            {% set status = status_map.get(site.id) %}
+            <tr>
+              <td>{{ site.label }}</td>
+              <td>
+                {% if status %}
+                  <span class="badge {{ status['last_status'] or 'unknown' }}">{{ status['last_status'] or 'unknown' }}</span>
+                {% else %}
+                  <span class="badge unknown">never-run</span>
+                {% endif %}
+              </td>
+              <td class="small">{{ status['last_error'] if status and status['last_error'] else "No recent error" }}</td>
+              <td class="small mono">{{ status['last_success_at'] if status and status['last_success_at'] else "-" }}</td>
+              <td>{{ status['consecutive_failures'] if status else 0 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </section>
 </section>
 {% endblock %}

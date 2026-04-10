@@ -32,14 +32,6 @@
 
     {% block content %}{% endblock %}
   </div>
-  <div id="keyword-menu" class="keyword-menu hidden">
-    <form method="post" action="{{ url_for('promote_keyword') }}">
-      <input type="hidden" name="term" id="keyword-menu-term">
-      <input type="hidden" name="bucket" id="keyword-menu-bucket">
-      <button type="submit">Add To Default Profile</button>
-    </form>
-  </div>
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
-

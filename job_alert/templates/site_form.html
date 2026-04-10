@@ -4,56 +4,70 @@
   <div class="panel-header">
     <div>
       <h2>{{ "Edit Site" if site else "Add Site" }}</h2>
-      <p>Use the default profile broadly, then add site-only refinements where needed.</p>
+      <p>Keep this page simple: core site settings at the top, keyword text lists in the middle, and optional YAML helpers at the bottom.</p>
+    </div>
+    <div class="inline-actions">
+      <a class="button ghost" href="{{ url_for('index', tab='job-alerts') }}">Back To Job Alerts</a>
     </div>
   </div>
-  <div class="grid two-up">
-    <label>Site Id<input name="id" value="{{ site.id if site else '' }}"></label>
-    <label>Label<input name="label" value="{{ site.label if site else '' }}"></label>
-    <label class="wide">Source URL<input name="source_url" value="{{ site.source_url if site else '' }}"></label>
-    <label>Adapter
-      <select name="type">
-        {% set current_type = site.type if site else 'auto' %}
-        {% for adapter in ['auto', 'workday', 'onlyfy', 'html_links', 'browser_links', 'lufthansa', 'successfactors'] %}
-          <option value="{{ adapter }}" {% if current_type == adapter %}selected{% endif %}>{{ adapter }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <label class="check"><input type="checkbox" name="enabled" {% if not site or site.enabled %}checked{% endif %}> Enabled</label>
-    <label class="check"><input type="checkbox" name="use_profile_defaults" {% if not site or site.use_profile_defaults %}checked{% endif %}> Inherit default profile</label>
-    <label class="check"><input type="checkbox" name="immediate_new_jobs" {% if not site or site.alerts.immediate_new_jobs %}checked{% endif %}> Immediate alerts</label>
-    <label class="check"><input type="checkbox" name="weekly_summary" {% if site and site.alerts.weekly_summary %}checked{% endif %}> Weekly summary</label>
-    <label class="check"><input type="checkbox" name="monthly_summary" {% if site and site.alerts.monthly_summary %}checked{% endif %}> Monthly summary</label>
-    <label class="check"><input type="checkbox" name="alert_on_failure" {% if not site or site.alerts.alert_on_failure %}checked{% endif %}> Alert on failure</label>
-    <label class="check"><input type="checkbox" name="advanced_expanded" {% if not site or site.ui.advanced_expanded %}checked{% endif %}> Show advanced by default</label>
-  </div>
 
-  {% if site and inherited %}
-    <section class="subpanel">
-      <h3>Inherited Profile Snapshot</h3>
-      <div class="keyword-grid">
-        <div>
-          <h4>Include</h4>
-          <div class="chip-stack">
-            {% for term in inherited.include_any %}
-              <span class="chip inherited">{{ term }}</span>
-            {% endfor %}
-          </div>
-        </div>
-        <div>
-          <h4>Exclude</h4>
-          <div class="chip-stack">
-            {% for term in inherited.exclude_any %}
-              <span class="chip inherited">{{ term }}</span>
-            {% endfor %}
-          </div>
-        </div>
+  <section class="subpanel">
+    <div class="section-head">
+      <div>
+        <h3>Core Site Settings</h3>
+        <p>This controls which site is monitored, which adapter is used, and which alert modes apply to this site.</p>
       </div>
-    </section>
+      <details class="info-block">
+        <summary>Why this matters</summary>
+        <p>The source URL and adapter decide how the scraper reads the site. The alert toggles decide whether this site sends immediate alerts, summaries, and failure warnings.</p>
+      </details>
+    </div>
+    <div class="grid two-up">
+      <label>Site Id<input name="id" value="{{ site.id if site else '' }}"></label>
+      <label>Label<input name="label" value="{{ site.label if site else '' }}"></label>
+      <label class="wide">Source URL<input name="source_url" value="{{ site.source_url if site else '' }}"></label>
+      <label>Adapter
+        <select name="type">
+          {% set current_type = site.type if site else 'auto' %}
+          {% for adapter in ['auto', 'workday', 'onlyfy', 'html_links', 'browser_links', 'lufthansa', 'successfactors'] %}
+            <option value="{{ adapter }}" {% if current_type == adapter %}selected{% endif %}>{{ adapter }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" name="enabled" {% if not site or site.enabled %}checked{% endif %}> Enabled</label>
+      <label class="check"><input type="checkbox" name="use_profile_defaults" {% if not site or site.use_profile_defaults %}checked{% endif %}> Inherit default profile</label>
+      <label class="check"><input type="checkbox" name="immediate_new_jobs" {% if not site or site.alerts.immediate_new_jobs %}checked{% endif %}> Immediate alerts</label>
+      <label class="check"><input type="checkbox" name="weekly_summary" {% if site and site.alerts.weekly_summary %}checked{% endif %}> Weekly summary</label>
+      <label class="check"><input type="checkbox" name="monthly_summary" {% if site and site.alerts.monthly_summary %}checked{% endif %}> Monthly summary</label>
+      <label class="check"><input type="checkbox" name="alert_on_failure" {% if not site or site.alerts.alert_on_failure %}checked{% endif %}> Alert on failure</label>
+      <label class="check"><input type="checkbox" name="advanced_expanded" {% if not site or site.ui.advanced_expanded %}checked{% endif %}> Show advanced by default</label>
+    </div>
+  </section>
+
+  {% if inherited %}
+    <details class="subpanel">
+      <summary>Show inherited default profile</summary>
+      <div class="grid two-up top-gap">
+        <label>Default Include Terms<textarea readonly>{{ list_to_textarea(inherited.include_any) }}</textarea></label>
+        <label>Default Exclude Terms<textarea readonly>{{ list_to_textarea(inherited.exclude_any) }}</textarea></label>
+        <label>Default Locations<textarea readonly>{{ list_to_textarea(inherited.location_any) }}</textarea></label>
+        <label>Default Contract Types<textarea readonly>{{ list_to_textarea(inherited.contract_type_any) }}</textarea></label>
+        <label class="wide">Default Languages<textarea readonly>{{ list_to_textarea(inherited.language_any) }}</textarea></label>
+      </div>
+    </details>
   {% endif %}
 
   <section class="subpanel">
-    <h3>Site-Specific Keywords</h3>
+    <div class="section-head">
+      <div>
+        <h3>Site-Specific Keyword Lists</h3>
+        <p>Edit these as plain text lists. One line per item is the easiest format.</p>
+      </div>
+      <details class="info-block">
+        <summary>How to use these</summary>
+        <p>If this site should mostly follow your default profile, leave Inherit default profile turned on and only add extra site-specific terms here. If this site needs special logic, turn that off and fill these lists more fully.</p>
+      </details>
+    </div>
     <div class="grid two-up">
       <label>Include Terms<textarea name="include_any">{{ list_to_textarea(site.include_any) if site else '' }}</textarea></label>
       <label>Exclude Terms<textarea name="exclude_any">{{ list_to_textarea(site.exclude_any) if site else '' }}</textarea></label>
@@ -61,37 +75,54 @@
       <label>Contract Types<textarea name="contract_type_any">{{ list_to_textarea(site.filters.contract_type_any) if site else '' }}</textarea></label>
       <label class="wide">Languages<textarea name="language_any">{{ list_to_textarea(site.filters.language_any) if site else '' }}</textarea></label>
     </div>
-    {% if site %}
-      <div class="keyword-grid">
-        <div>
-          <h4>Right-click site-only include terms to promote them</h4>
-          <div class="chip-stack">
-            {% for term in site.include_any %}
-              <span class="chip site-only" data-term="{{ term }}" data-bucket="include_any">{{ term }}</span>
-            {% else %}
-              <span class="small">No site-only include terms.</span>
-            {% endfor %}
-          </div>
-        </div>
-        <div>
-          <h4>Right-click site-only location terms to promote them</h4>
-          <div class="chip-stack">
-            {% for term in site.filters.location_any %}
-              <span class="chip site-only" data-term="{{ term }}" data-bucket="location_any">{{ term }}</span>
-            {% else %}
-              <span class="small">No site-only location terms.</span>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-    {% endif %}
   </section>
 
-  <div class="inline-actions">
+  <div class="inline-actions top-gap">
     <button class="button" type="submit">Save Site</button>
-    <a class="button ghost" href="{{ url_for('index') }}">Back</a>
   </div>
 </form>
+
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <h2>Site YAML Helpers</h2>
+      <p>Use these when you want another AI to generate a site-specific keyword override from your CV, a liked job ad, or notes about this company.</p>
+    </div>
+  </div>
+  {% if site %}
+    <details class="drop-panel">
+      <summary>Import Site YAML</summary>
+      <form class="top-gap" method="post" action="{{ url_for('import_site_yaml', site_id=site.id) }}">
+        <label class="wide">YAML<textarea name="site_yaml" class="tall"></textarea></label>
+        <div class="inline-actions">
+          <button class="button ghost" type="submit">Import YAML Into This Site</button>
+        </div>
+      </form>
+    </details>
+  {% else %}
+    <details class="drop-panel">
+      <summary>Import Site YAML</summary>
+      <p class="small">Save the site once first, then reopen it to import YAML directly into that saved site.</p>
+    </details>
+  {% endif %}
+  <details class="drop-panel">
+    <summary>Example Format</summary>
+    <p class="small">This is the exact YAML structure the site importer expects.</p>
+    <pre class="code-block" id="site-yaml-example">{{ site_yaml_example }}</pre>
+    <div class="inline-actions">
+      <button class="button ghost small" type="button" data-copy-target="site-yaml-example">Copy Example</button>
+    </div>
+  </details>
+  <details class="drop-panel">
+    <summary>AI Prompt Guide</summary>
+    <p class="small">You can attach your CV, notes, or example job ads and use this prompt to ask another AI for site-specific YAML.</p>
+    <pre class="code-block" id="site-ai-prompt">{{ site_ai_prompt }}</pre>
+    <div class="inline-actions">
+      <button class="button ghost small" type="button" data-copy-target="site-ai-prompt">Copy Prompt</button>
+    </div>
+  </details>
+</section>
+
 {% if site %}
   <form class="panel" method="post" action="{{ url_for('delete_site', site_id=site.id) }}" onsubmit="return confirm('Delete this site?');">
     <button class="button danger" type="submit">Delete Site</button>

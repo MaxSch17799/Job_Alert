@@ -178,7 +178,7 @@ global:
   scheduler:
     mode: daily
     interval: 1
-    time: "08:00"
+    time: 08:00
     weekdays:
       - MON
   defaults:
@@ -187,13 +187,12 @@ global:
     browser_fallback: true
     request_timeout_seconds: 30
     detail_fetch_enabled: false
-
 sites:
   - id: eumetsat_onlyfy
     label: EUMETSAT Jobbase
-    enabled: true
     source_url: https://eumetsat.onlyfy.jobs/
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -208,12 +207,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: leonardo
     label: Leonardo Career Site
-    enabled: true
     source_url: https://leonardocompany.wd3.myworkdayjobs.com/LeonardoCareerSite
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -228,12 +226,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: airbus
     label: Airbus Careers
-    enabled: true
     source_url: https://ag.wd3.myworkdayjobs.com/Airbus
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -248,12 +245,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: esa
     label: ESA Jobs
-    enabled: true
     source_url: https://jobs.esa.int/
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -268,12 +264,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: eumetsat_page
     label: EUMETSAT Vacancies Page
-    enabled: true
     source_url: https://www.eumetsat.int/work-us/vacancies
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -288,12 +283,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: saab
     label: Saab Careers
-    enabled: true
     source_url: https://www.saab.com/career
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -308,12 +302,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: beyond_gravity
     label: Beyond Gravity
-    enabled: true
     source_url: https://www.beyondgravity.com/en/careers
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -328,12 +321,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: pilatus
     label: Pilatus Jobs
-    enabled: true
     source_url: https://www.pilatus-aircraft.com/en/jobs
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -348,12 +340,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: ohb_page
     label: OHB Careers Page
-    enabled: true
     source_url: https://www.ohb.de/en/career
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -368,12 +359,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: ohb_csod
     label: OHB Applicant Portal
-    enabled: true
     source_url: https://career-ohb.csod.com/ux/ats/careersite/4/home?c=career-ohb&lang=de-DE
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -388,12 +378,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: lufthansa_technik
     label: Lufthansa Technik
-    enabled: true
     source_url: https://www.lufthansa-technik.com/en/career
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
@@ -408,12 +397,11 @@ sites:
       alert_on_failure: true
     ui:
       advanced_expanded: true
-
   - id: cern
     label: CERN Tech Jobs
-    enabled: true
     source_url: https://careers.smartrecruiters.com/cern/tech
     type: auto
+    enabled: true
     use_profile_defaults: true
     include_any: []
     exclude_any: []
