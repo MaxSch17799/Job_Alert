@@ -65,7 +65,7 @@ if (wizard) {
   const openButtons = document.querySelectorAll("[data-open-wizard]");
   const closeButtons = wizard.querySelectorAll("[data-close-wizard]");
   const orderedTopics = topicButtons.map((button) => button.dataset.wizardTopicButton);
-  let currentTopic = orderedTopics[0] || "email";
+  let currentTopic = wizard.dataset.startTopic || orderedTopics[0] || "email";
 
   const renderTopic = () => {
     topicButtons.forEach((button) => {
@@ -126,6 +126,10 @@ if (wizard) {
   });
 
   renderTopic();
+
+  if (wizard.dataset.openOnLoad === "true") {
+    openWizard();
+  }
 }
 
 document.querySelectorAll("[data-copy-target]").forEach((button) => {
@@ -222,9 +226,8 @@ if (previewModal) {
     `;
   };
 
-  const renderPayload = (payload, mode) => {
-    const modeLabel = mode === "test" ? "Live Test Results" : "Current Matching Jobs";
-    titleNode.textContent = `${payload.label} | ${modeLabel}`;
+  const renderPayload = (payload) => {
+    titleNode.textContent = `${payload.label} | Current Matching Jobs`;
 
     if (!payload.ok) {
       subtitleNode.textContent = "Live check failed";
@@ -264,11 +267,10 @@ if (previewModal) {
 
   const loadPreview = async (button) => {
     const siteId = button.dataset.siteId;
-    const mode = button.dataset.previewMode || "matches";
     const originalLabel = button.textContent;
 
     button.disabled = true;
-    button.textContent = mode === "test" ? "Testing..." : "Loading...";
+    button.textContent = "Loading...";
     titleNode.textContent = "Site Results";
     subtitleNode.textContent = "Loading current jobs...";
     metaNode.innerHTML = "";
@@ -283,7 +285,7 @@ if (previewModal) {
       if (!response.ok) {
         throw new Error(payload.error || "Preview request failed.");
       }
-      renderPayload(payload, mode);
+      renderPayload(payload);
     } catch (error) {
       titleNode.textContent = "Site Results";
       subtitleNode.textContent = "Preview failed";

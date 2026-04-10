@@ -174,6 +174,31 @@ def _coerce_list(value: Any) -> list[str]:
     return textarea_to_list(str(value))
 
 
+def _coerce_positive_int(value: Any, default: int) -> int:
+    try:
+        parsed = int(str(value).strip() or default)
+    except (TypeError, ValueError):
+        return default
+    return parsed if parsed > 0 else default
+
+
+def _update_email_from_form(config, form: dict[str, str], list_parser) -> None:
+    config.email.sender_email = form.get("email_sender_email", config.email.sender_email).strip()
+    config.email.sender_name = form.get("email_sender_name", config.email.sender_name).strip() or "Job Alert"
+    config.email.smtp_username = form.get("email_smtp_username", config.email.smtp_username).strip()
+    config.email.smtp_app_password = form.get("email_smtp_app_password", config.email.smtp_app_password).strip()
+    config.email.smtp_host = form.get("email_smtp_host", config.email.smtp_host).strip() or "smtp.gmail.com"
+    config.email.smtp_port = _coerce_positive_int(form.get("email_smtp_port"), config.email.smtp_port or 587)
+    config.email.recipient_emails = list_parser(form.get("email_recipient_emails"))
+
+
+def _update_scheduler_from_form(config, form: dict[str, str], list_parser) -> None:
+    config.scheduler.mode = form.get("scheduler_mode", config.scheduler.mode).strip() or "daily"
+    config.scheduler.interval = _coerce_positive_int(form.get("scheduler_interval"), config.scheduler.interval or 1)
+    config.scheduler.time = form.get("scheduler_time", config.scheduler.time).strip() or "08:00"
+    config.scheduler.weekdays = list_parser(form.get("scheduler_weekdays")) or ["MON"]
+
+
 def _build_site_ai_prompt(site: SiteConfig | None) -> str:
     label = site.label if site else "Example Site"
     source_url = site.source_url if site else "https://example.com/jobs"
@@ -244,6 +269,7 @@ def create_app() -> Flask:
             "setup" if not notifier.is_configured() or not scheduler_status["exists"] else "job-alerts"
         )
         latest_run = runs[0] if runs else None
+        wizard_topic = request.args.get("wizard", "").strip() or ""
         return render_template(
             "index.html",
             config=config,
@@ -257,6 +283,7 @@ def create_app() -> Flask:
             latest_run=latest_run,
             profile_yaml_example=PROFILE_YAML_EXAMPLE,
             profile_ai_prompt=PROFILE_AI_PROMPT,
+            wizard_topic=wizard_topic,
         )
 
     @app.post("/profile/save")
@@ -296,6 +323,34 @@ def create_app() -> Flask:
         except Exception as exc:
             flash(f"Test email failed: {exc}", "danger")
         return redirect(url_for("index", tab="setup"))
+
+    @app.post("/wizard/email")
+    def wizard_email():
+        config = load_config()
+        _update_email_from_form(config, request.form, textarea_to_list)
+        save_config(config)
+        action = request.form.get("wizard_action", "save").strip()
+        if action == "save_test":
+            notifier = EmailNotifier(
+                smtp_host=config.email.smtp_host,
+                smtp_port=config.email.smtp_port,
+                smtp_username=config.email.smtp_username,
+                smtp_app_password=config.email.smtp_app_password,
+                sender_email=config.email.sender_email,
+                sender_name=config.email.sender_name,
+                recipient_emails=config.email.recipient_emails,
+            )
+            if not notifier.is_configured():
+                flash("Email settings are still incomplete. Fill in sender, SMTP username, app password, and at least one recipient.", "warning")
+            else:
+                try:
+                    description = notifier.send_test_message()
+                    flash(f"Email settings saved and test email sent: {description}", "success")
+                except Exception as exc:
+                    flash(f"Email settings saved, but test email failed: {exc}", "danger")
+        else:
+            flash("Email settings saved from the setup wizard.", "success")
+        return redirect(url_for("index", tab="setup", wizard="email"))
 
     @app.post("/profile/import")
     def import_profile():
@@ -441,6 +496,9 @@ def create_app() -> Flask:
     def run_now():
         summary = JobAlertRunner().run_all()
         flash(summary.render_text().replace("\n", " | "), "success")
+        wizard_topic = request.form.get("wizard_topic", "").strip()
+        if wizard_topic:
+            return redirect(url_for("index", tab="setup", wizard=wizard_topic))
         return redirect(url_for("index", tab="diagnostics"))
 
     @app.post("/scheduler/apply")
@@ -449,6 +507,19 @@ def create_app() -> Flask:
         ok, message = SchedulerService().apply(config.scheduler)
         flash(message, "success" if ok else "danger")
         return redirect(url_for("index", tab="setup"))
+
+    @app.post("/wizard/scheduler")
+    def wizard_scheduler():
+        config = load_config()
+        _update_scheduler_from_form(config, request.form, textarea_to_list)
+        save_config(config)
+        action = request.form.get("wizard_action", "save").strip()
+        if action == "save_apply":
+            ok, message = SchedulerService().apply(config.scheduler)
+            flash(message, "success" if ok else "danger")
+        else:
+            flash("Schedule settings saved from the setup wizard.", "success")
+        return redirect(url_for("index", tab="setup", wizard="windows"))
 
     @app.post("/keywords/promote")
     def promote_keyword():

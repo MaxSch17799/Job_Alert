@@ -43,12 +43,17 @@
       </div>
     </section>
 
-    <section class="wizard hidden" id="setup-wizard">
+    <section
+      class="wizard hidden"
+      id="setup-wizard"
+      data-start-topic="{{ wizard_topic or 'email' }}"
+      data-open-on-load="{{ 'true' if wizard_topic else 'false' }}"
+    >
       <div class="wizard-card">
         <div class="panel-header">
           <div>
             <h2>Setup Wizard</h2>
-            <p>This is the foolproof walkthrough. Pick a setup topic, follow the numbered steps, then switch to the next topic at the bottom.</p>
+            <p>This is the foolproof walkthrough. Enter the required information directly here, save it for real, then move to the next topic at the bottom.</p>
           </div>
           <button class="button ghost small" type="button" data-close-wizard>Close</button>
         </div>
@@ -61,60 +66,87 @@
         <section class="wizard-topic" data-wizard-topic-panel="email">
           <h3>Email Setup</h3>
           <ol class="wizard-list">
-            <li>Create or choose the Gmail account that will send the alerts.</li>
-            <li>Best practice is a dedicated sender Gmail, so your personal inbox only receives alerts and does not also send them.</li>
-            <li>Log into that Gmail account in your browser and turn on 2-Step Verification.</li>
-            <li>Create a Gmail App Password for this tool. This is required because the tool should not use your normal Gmail password.</li>
-            <li>Back in the Setup tab below, fill in `Sender Email`, `SMTP Username`, `Gmail App Password`, and your `Recipients`.</li>
-            <li>Click `Save Setup Settings`.</li>
-            <li>Click `Send Test Email` and confirm it arrives.</li>
+            <li>Create or choose the Gmail account that will send the alerts. A dedicated alert Gmail is the cleanest setup.</li>
+            <li>In that Gmail account, turn on 2-Step Verification and create a Gmail App Password for this tool.</li>
+            <li>Enter the account details below and click `Save + Send Test Email` to confirm it works immediately.</li>
           </ol>
-          <details class="info-block top-gap">
+          <form class="wizard-form" method="post" action="{{ url_for('wizard_email') }}">
+            <div class="grid two-up">
+              <label>Sender Email<input name="email_sender_email" value="{{ config.email.sender_email }}" autocomplete="email"></label>
+              <label>Sender Name<input name="email_sender_name" value="{{ config.email.sender_name }}"></label>
+              <label>SMTP Username<input name="email_smtp_username" value="{{ config.email.smtp_username }}" autocomplete="username"></label>
+              <label>Recipient Emails<textarea name="email_recipient_emails">{{ list_to_textarea(config.email.recipient_emails) }}</textarea></label>
+              <label class="wide">Gmail App Password<input name="email_smtp_app_password" type="password" value="{{ config.email.smtp_app_password }}" autocomplete="current-password"></label>
+            </div>
+            <details class="info-block top-gap">
+              <summary>Advanced SMTP server settings</summary>
+              <div class="grid two-up top-gap">
+                <label>SMTP Host<input name="email_smtp_host" value="{{ config.email.smtp_host }}"></label>
+                <label>SMTP Port<input name="email_smtp_port" value="{{ config.email.smtp_port }}"></label>
+              </div>
+            </details>
+            <div class="inline-actions top-gap">
+              <button class="button ghost small" type="submit" name="wizard_action" value="save">Save Email Settings</button>
+              <button class="button small" type="submit" name="wizard_action" value="save_test">Save + Send Test Email</button>
+            </div>
+          </form>
+          <details class="info-block">
             <summary>Why each email field exists</summary>
             <p>`Sender Email` is the mailbox Gmail sends from. `SMTP Username` is usually the same Gmail address. `Gmail App Password` is the special password Google gives apps. `Recipients` are the inboxes that receive the alerts.</p>
           </details>
-          <div class="inline-actions top-gap">
-            <button class="button ghost small" type="button" data-tab-target="setup" data-scroll-target="setup-email-section">Open Email Fields</button>
-          </div>
         </section>
 
         <section class="wizard-topic hidden" data-wizard-topic-panel="windows">
           <h3>Windows Schedule</h3>
           <ol class="wizard-list">
-            <li>Choose how often the scraper should run in `Schedule Mode`.</li>
-            <li>Set `Repeat Interval` to `1` for every day, `2` for every two days, or similar.</li>
-            <li>Set the `Run Time` for when your PC is usually on.</li>
-            <li>If you use weekly mode, list the weekdays you want.</li>
-            <li>Click `Save Setup Settings`.</li>
-            <li>Click `Apply Windows Schedule`.</li>
-            <li>Check that the status now says the Windows schedule is installed and shows a next run time.</li>
+            <li>Choose how often the scraper should run.</li>
+            <li>Set the time for when your PC is usually on.</li>
+            <li>Click `Save + Apply Windows Schedule` so the scheduler is created immediately.</li>
           </ol>
-          <details class="info-block top-gap">
+          <form class="wizard-form" method="post" action="{{ url_for('wizard_scheduler') }}">
+            <div class="setup-meta">
+              <span class="badge {{ 'success' if scheduler_status.exists else 'unknown' }}">{{ "installed" if scheduler_status.exists else "not installed" }}</span>
+              <span class="small">Next run: {{ scheduler_status.next_run_time or "Not scheduled yet" }}</span>
+            </div>
+            <div class="grid two-up top-gap">
+              <label>Schedule Mode
+                <select name="scheduler_mode">
+                  <option value="daily" {% if config.scheduler.mode == 'daily' %}selected{% endif %}>Every N days</option>
+                  <option value="weekly" {% if config.scheduler.mode == 'weekly' %}selected{% endif %}>Every N weeks on weekdays</option>
+                </select>
+              </label>
+              <label>Repeat Interval<input name="scheduler_interval" value="{{ config.scheduler.interval }}"></label>
+              <label>Run Time<input name="scheduler_time" value="{{ config.scheduler.time }}"></label>
+              <label class="wide">Weekdays<textarea name="scheduler_weekdays">{{ list_to_textarea(config.scheduler.weekdays) }}</textarea></label>
+            </div>
+            <div class="inline-actions top-gap">
+              <button class="button ghost small" type="submit" name="wizard_action" value="save">Save Schedule Settings</button>
+              <button class="button small" type="submit" name="wizard_action" value="save_apply">Save + Apply Windows Schedule</button>
+            </div>
+          </form>
+          <details class="info-block">
             <summary>Why this is needed</summary>
             <p>Without Windows Task Scheduler, nothing runs automatically. The schedule is what turns this from a manual tool into a daily job alert service on your PC.</p>
           </details>
-          <div class="inline-actions top-gap">
-            <button class="button ghost small" type="button" data-tab-target="setup" data-scroll-target="setup-schedule-section">Open Schedule Fields</button>
-          </div>
         </section>
 
         <section class="wizard-topic hidden" data-wizard-topic-panel="first-run">
           <h3>First Run</h3>
           <ol class="wizard-list">
-            <li>After email and schedule are ready, go to the `Job Alerts` tab.</li>
-            <li>Click `Run Now` once so the tool can scrape all sites and store the current jobs.</li>
-            <li>Use `View Matches` for a site to inspect the currently matching roles in a popup.</li>
-            <li>Use `Test` for a site when you want a live check of that board and its current matching jobs.</li>
-            <li>Go to `Diagnostics` if a site breaks or a board stops returning jobs.</li>
+            <li>After email and schedule are ready, run the scraper once from here.</li>
+            <li>This first run stores the current job state so the app can distinguish future new jobs from already-seen ones.</li>
+            <li>After that, use the `Job Alerts` tab and the `Check Current Matches` button to inspect sites live.</li>
           </ol>
+          <form class="inline-actions" method="post" action="{{ url_for('run_now') }}">
+            <input type="hidden" name="wizard_topic" value="first-run">
+            <button class="button" type="submit">Run First Check Now</button>
+            <button class="button ghost small" type="button" data-tab-target="job-alerts" data-close-wizard>Open Job Alerts Tab</button>
+            <button class="button ghost small" type="button" data-tab-target="diagnostics" data-close-wizard>Open Diagnostics Tab</button>
+          </form>
           <details class="info-block top-gap">
             <summary>What happens on the first run</summary>
             <p>The first run boots the database with the current jobs. After that, the tool can tell what is genuinely new and avoid reminding you about the same posting every day.</p>
           </details>
-          <div class="inline-actions top-gap">
-            <button class="button ghost small" type="button" data-tab-target="job-alerts">Open Job Alerts Tab</button>
-            <button class="button ghost small" type="button" data-tab-target="diagnostics">Open Diagnostics Tab</button>
-          </div>
         </section>
 
         <div class="wizard-footer">
@@ -301,7 +333,7 @@
       <div class="panel-header">
         <div>
           <h2>Job Alerts</h2>
-          <p>This is the list of monitored sites. Open the websites directly, preview matching jobs in a popup, run live tests, or edit the site settings.</p>
+          <p>This is the list of monitored sites. Open the websites directly, check the current matching jobs in a popup, or edit the site settings.</p>
         </div>
         <div class="inline-actions">
           <form method="post" action="{{ url_for('run_now') }}">
@@ -318,8 +350,7 @@
             <th>Adapter</th>
             <th>Status</th>
             <th>Failures</th>
-            <th>View Matches</th>
-            <th>Test</th>
+            <th>Check Current Matches</th>
             <th>Edit</th>
           </tr>
         </thead>
@@ -331,42 +362,29 @@
                 <strong><a class="site-link" href="{{ site.source_url }}" target="_blank" rel="noreferrer">{{ site.label }}</a></strong>
                 <div class="small mono">{{ site.id }}</div>
               </td>
-              <td class="small"><a class="site-link mono" href="{{ site.source_url }}" target="_blank" rel="noreferrer">{{ site.source_url }}</a></td>
+              <td class="small site-url-cell"><a class="site-link site-url-link mono" href="{{ site.source_url }}" target="_blank" rel="noreferrer">{{ site.source_url }}</a></td>
               <td>{{ status['last_adapter'] if status and status['last_adapter'] else site.type }}</td>
               <td>
                 {% if status %}
                   <span class="badge {{ status['last_status'] or 'unknown' }}">{{ status['last_status'] or 'unknown' }}</span>
                   <div class="small">{{ status['last_error'] or 'No recent error' }}</div>
-                  <div class="small mono">{{ status['resolved_url'] if status['resolved_url'] else '' }}</div>
                 {% else %}
                   <span class="badge unknown">never-run</span>
                 {% endif %}
               </td>
               <td>{{ status['consecutive_failures'] if status else 0 }}</td>
-              <td>
+              <td class="action-cell">
                 <button
                   class="button ghost small"
                   type="button"
                   data-site-preview
                   data-site-id="{{ site.id }}"
-                  data-preview-mode="matches"
                 >
-                  View Matches
+                  Check Current Matches
                 </button>
               </td>
-              <td>
-                <button
-                  class="button ghost small"
-                  type="button"
-                  data-site-preview
-                  data-site-id="{{ site.id }}"
-                  data-preview-mode="test"
-                >
-                  Test
-                </button>
-              </td>
-              <td>
-                <a class="button small" href="{{ url_for('edit_site', site_id=site.id) }}">Edit</a>
+              <td class="action-cell">
+                <a class="button ghost small edit-button" href="{{ url_for('edit_site', site_id=site.id) }}">Edit</a>
               </td>
             </tr>
           {% endfor %}

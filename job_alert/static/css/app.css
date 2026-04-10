@@ -175,6 +175,13 @@ textarea[readonly] {
   border-color: var(--line);
 }
 
+.edit-button {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .button.small {
   padding: 8px 12px;
   font-size: 0.88rem;
@@ -334,6 +341,7 @@ textarea[readonly] {
 .site-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .site-table th,
@@ -342,6 +350,7 @@ textarea[readonly] {
   padding: 14px 10px;
   border-top: 1px solid var(--line);
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 
 .site-table thead th {
@@ -438,6 +447,11 @@ textarea[readonly] {
   gap: 16px;
 }
 
+.wizard-form {
+  display: grid;
+  gap: 16px;
+}
+
 .wizard-list {
   margin: 0;
   padding-left: 22px;
@@ -452,6 +466,23 @@ textarea[readonly] {
 
 .site-link:hover {
   text-decoration: underline;
+}
+
+.site-url-cell {
+  max-width: 320px;
+}
+
+.site-url-link {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.action-cell {
+  white-space: nowrap;
+  width: 1%;
 }
 
 .preview-card {
