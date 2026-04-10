@@ -76,7 +76,7 @@
               <label>Sender Name<input name="email_sender_name" value="{{ config.email.sender_name }}"></label>
               <label>SMTP Username<input name="email_smtp_username" value="{{ config.email.smtp_username }}" autocomplete="username"></label>
               <label>Recipient Emails<textarea name="email_recipient_emails">{{ list_to_textarea(config.email.recipient_emails) }}</textarea></label>
-              <label class="wide">Gmail App Password<input name="email_smtp_app_password" type="password" value="{{ config.email.smtp_app_password }}" autocomplete="current-password"></label>
+              <label class="wide">Gmail App Password<input name="email_smtp_app_password" type="text" value="{{ config.email.smtp_app_password }}" autocomplete="off"></label>
             </div>
             <details class="info-block top-gap">
               <summary>Advanced SMTP server settings</summary>
@@ -182,7 +182,7 @@
           <label>Recipients<textarea name="email_recipient_emails">{{ list_to_textarea(config.email.recipient_emails) }}</textarea></label>
           <label>SMTP Host<input name="email_smtp_host" value="{{ config.email.smtp_host }}"></label>
           <label>SMTP Port<input name="email_smtp_port" value="{{ config.email.smtp_port }}"></label>
-          <label class="wide">Gmail App Password<input name="email_smtp_app_password" type="password" value="{{ config.email.smtp_app_password }}"></label>
+          <label class="wide">Gmail App Password<input name="email_smtp_app_password" type="text" value="{{ config.email.smtp_app_password }}" autocomplete="off"></label>
         </div>
       </section>
 
