@@ -80,7 +80,16 @@ global:
       - air traffic management
       - radar systems
       - radar systems engineer
+      - mechanical
+      - stress
+      - structural
+      - structures
+      - composites
+      - manufacturing
+      - process
+      - production
     exclude_any:
+      - mechaniker
       - software engineer
       - software developer
       - embedded software engineer
@@ -111,13 +120,6 @@ global:
       - purchasing
       - supply chain
       - logistics
-      - mechanical design
-      - structures
-      - structural engineer
-      - stress engineer
-      - aerodynamics
-      - manufacturing engineer
-      - production engineer
       - quality engineer
       - quality assurance
       - working student
@@ -193,7 +195,7 @@ sites:
     source_url: https://eumetsat.onlyfy.jobs/
     type: auto
     enabled: true
-    use_profile_defaults: true
+    use_profile_defaults: false
     include_any: []
     exclude_any: []
     filters:
@@ -250,7 +252,7 @@ sites:
     source_url: https://jobs.esa.int/
     type: auto
     enabled: true
-    use_profile_defaults: true
+    use_profile_defaults: false
     include_any: []
     exclude_any: []
     filters:
@@ -269,7 +271,7 @@ sites:
     source_url: https://www.eumetsat.int/work-us/vacancies
     type: auto
     enabled: true
-    use_profile_defaults: true
+    use_profile_defaults: false
     include_any: []
     exclude_any: []
     filters:
@@ -337,7 +339,7 @@ sites:
       immediate_new_jobs: true
       weekly_summary: false
       monthly_summary: false
-      alert_on_failure: true
+      alert_on_failure: false
     ui:
       advanced_expanded: true
   - id: ohb_page
@@ -400,6 +402,44 @@ sites:
   - id: cern
     label: CERN Tech Jobs
     source_url: https://careers.smartrecruiters.com/cern/tech
+    type: auto
+    enabled: true
+    use_profile_defaults: true
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: false
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+  - id: eumetsat-onlyfy
+    label: EUMETSAT Jobbase
+    source_url: https://eumetsat.onlyfy.jobs/
+    type: auto
+    enabled: true
+    use_profile_defaults: false
+    include_any: []
+    exclude_any: []
+    filters:
+      location_any: []
+      contract_type_any: []
+      language_any: []
+    alerts:
+      immediate_new_jobs: true
+      weekly_summary: true
+      monthly_summary: false
+      alert_on_failure: true
+    ui:
+      advanced_expanded: true
+  - id: cern-2
+    label: CERN
+    source_url: https://careers.cern/jobs/
     type: auto
     enabled: true
     use_profile_defaults: true
